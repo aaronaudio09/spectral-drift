@@ -3,6 +3,7 @@
 A Winamp-style music visualizer that turns whatever you're playing into living visuals.
 
 **Try it in your browser:** https://aaronaudio09.github.io/spectral-drift/
+
 **Windows app (free):** [Microsoft Store](https://apps.microsoft.com/detail/9P8FM3XZN945)
 
 ![Spectral Drift](screenshot.jpg)
