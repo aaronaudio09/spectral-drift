@@ -10,7 +10,7 @@ A Winamp-style music visualizer that turns whatever you're playing into living v
 
 ## What it does
 
-Ten visualizers: Hyperspace (endless zooms through space or your own picture), 3D Worlds (ten scenes drawn on your graphics card), Ink (a real fluid simulation you stir with the mouse), Swarm, Mandala, Laser show, over 200 classic MilkDrop presets, an AVS-style effect builder, the Classic analyzer and Reactor.
+Ten visualizers: Hyperspace (endless zooms through space or your own picture), 3D Worlds (ten scenes drawn on your graphics card), Ink (a real fluid simulation you stir with the mouse), Swarm, Mandala, Laser show, 98 classic MilkDrop presets (242 with the extra pack), an AVS-style effect builder, the Classic analyzer and Reactor.
 
 Bass, mid and high each drive the picture their own way, kicks, snares and hats hit harder, and Dynamics decides how calm quiet music looks. Save any picture you like as a named look and bring it back later.
 
