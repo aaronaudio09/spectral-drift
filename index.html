@@ -152,6 +152,19 @@ input[type=text]{width:100%;background:var(--panel-2);color:var(--fg);border:1px
 .look-cur{flex:1 1 100%;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .look-acts input{flex:1 1 100%}
 .look-acts .btn{flex:1}
+.cloud{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 10px}
+.cloud .note{flex:1 1 100%}
+.gbtn{display:inline-flex;align-items:center;justify-content:center;gap:8px;flex:1 1 100%}
+.gbtn img{width:16px;height:16px;flex:none}
+.cloud-on{display:flex;flex-wrap:wrap;gap:6px;align-items:center;flex:1 1 100%}
+.cloud-who{flex:1 1 100%;display:flex;gap:6px;align-items:center;min-width:0;font-size:12px;color:var(--muted)}
+.cloud-who #cloudState{color:var(--fg);flex:none;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cloud-who #cloudWho{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--font-data);font-size:11px}
+.cdot{width:8px;height:8px;border-radius:50%;background:var(--dim);flex:none}
+.cdot.on{background:var(--treb)}.cdot.wait{background:var(--mid)}.cdot.err{background:var(--bad)}
+.cdot.sync{background:var(--mid);animation:cpulse .9s ease-in-out infinite alternate}
+@keyframes cpulse{to{opacity:.3}}
+.cloud-on .btn{flex:1}
 .ctl input:disabled + .why,.lab-sel select:disabled{opacity:.5}
 .tipbox{position:fixed;z-index:60;left:0;top:0;max-width:290px;background:rgba(10,12,18,.97);border:1px solid var(--line-2);border-radius:6px;padding:7px 10px;font-size:12px;line-height:1.45;color:var(--fg);pointer-events:none;opacity:0;transform:translateY(-3px);transition:opacity .12s,transform .12s;box-shadow:0 8px 24px rgba(0,0,0,.5)}
 .tipbox.show{opacity:1;transform:none}
@@ -276,6 +289,15 @@ body.ui-hidden.interactive .showbtn{display:grid}
     <div class="dock-body">
       <section id="sec-looks">
         <h2>Saved looks <small id="looksTag">none yet</small></h2>
+        <div class="cloud" id="cloudRow" hidden>
+          <button class="btn sm gbtn" id="btnCloudIn" type="button"><img id="cloudG" alt="" width="16" height="16" hidden><span id="cloudInTxt">Sign in with Google</span></button>
+          <p class="note" id="cloudNote">Sign in to keep your looks in your Google account and get them on every device you sign in on.</p>
+          <div class="cloud-on" id="cloudOn" hidden>
+            <div class="cloud-who"><i class="cdot" id="cloudDot"></i><span id="cloudState">Syncing…</span><span id="cloudWho"></span></div>
+            <button class="btn sm" id="btnCloudOut" type="button">Sign out</button>
+            <button class="btn sm" id="btnCloudDel" type="button">Delete cloud copy</button>
+          </div>
+        </div>
         <div class="look-save">
           <input type="text" id="lookName" maxlength="40" placeholder="Name this look" aria-label="Look name" autocomplete="off" spellcheck="false">
           <button class="btn sm" id="btnLookSave">Save</button>
@@ -3809,7 +3831,10 @@ const TIP_IDS = {
   dyn:'How different quiet and loud parts look. Low: every song fills the screen (auto-level). High: quiet music stays calm and loud music explodes, following the real loudness.',
   lookName:'A name for the look you are about to save.', btnLookSave:'Saves what is on screen now: the visualizer, its scene or preset, and every dial.',
   btnLookQuick:'Saves this look with an automatic name (S). Rename it later under Saved looks.', btnLookUpdate:'Replaces the selected look with what is on screen now.',
-  btnLookRename:'Renames the selected look.', btnLookDel:'Deletes the selected look. Press twice.'
+  btnLookRename:'Renames the selected look.', btnLookDel:'Deletes the selected look. Press twice.',
+  btnCloudIn:'Signs in with your Google account. Your saved looks are then kept in your account and show up on every device where you sign in. Looks already on this device are added too.',
+  btnCloudOut:'Stops syncing on this device. Your looks stay here, and the copy in your account stays too.',
+  btnCloudDel:'Deletes your account and every look stored in it. The looks on this device stay. Press twice.'
 };
 function ctlTip(eng, fx, c){ return c.tip || c.hint || KEY_TIPS[eng + '.' + fx + '.' + c.k] || KEY_TIPS[eng + '.' + c.k] || KEY_TIPS[c.k] || ''; }
 function fxTip(eng, fx){ const e = UI[eng] && UI[eng].effects && UI[eng].effects[fx]; return (e && e.desc) || (FX_TIPS[eng] && FX_TIPS[eng][fx]) || ''; }
@@ -4005,12 +4030,13 @@ function musicMeters(now){
     MDRV.n++; }
 }
 /* ================= saved looks (v10): name the current picture and bring it back later ================= */
+// v11: signed in, every save, update, rename and delete also goes to your account (feat_cloud.js), so looks sync across devices.
 // A look is the whole state (visualizer, scene or preset, every dial, Feel and Music drive) plus a thumbnail, kept in this
 // device's storage. Loading one goes through applyState(), the path a linked phone already uses, then goes out to a linked PC
 // or TV like any other change. Per-device settings (volume, render quality) stay put. Hyperspace image scenes keep a small
 // copy of their picture so they come back as they were.
 const LOOKS = { list:[], sel:'', want:null, KEY:'spectral-drift-looks', MAX:80, del:0, delT:0 };
-function looksLoad(){ try { const j = JSON.parse(localStorage.getItem(LOOKS.KEY) || '[]'); LOOKS.list = Array.isArray(j) ? j.filter(x => x && x.id && x.state && typeof x.state.engine === 'string') : []; } catch(e){ LOOKS.list = []; } }
+function looksLoad(){ try { const j = JSON.parse(localStorage.getItem(LOOKS.KEY) || '[]'); LOOKS.list = Array.isArray(j) ? j.filter(x => x && x.id && x.state && typeof x.state.engine === 'string') : []; } catch(e){ LOOKS.list = []; } looksSort(); }
 function looksStore(){ try { localStorage.setItem(LOOKS.KEY, JSON.stringify(LOOKS.list)); return true; } catch(e){ toast('Storage is full. Delete a few looks and try again.'); return false; } }
 function engName(e){ const o = document.querySelector('#engineSel option[value="' + e + '"]'); return o ? o.textContent.replace(/\s*\(.*\)\s*$/, '') : e; }
 function lookLabel(st){
@@ -4046,9 +4072,12 @@ function lookSnapshot(){ const st = JSON.parse(stateJSON()); REMOTE_LOCAL.forEac
 function lookSave(name){
   name = String(name || '').replace(/\s+/g, ' ').trim().slice(0, 40) || lookAutoName();
   const { st, img } = lookSnapshot();
-  const L = { id:'L' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name, t:Date.now(), label:lookLabel(st), state:st, img, thumb:'' };
-  looksGrab(th => { L.thumb = th; LOOKS.list.unshift(L); if (LOOKS.list.length > LOOKS.MAX) LOOKS.list.length = LOOKS.MAX;
-    if (!looksStore()){ LOOKS.list.shift(); return; }
+  const now = Date.now(), L = { id:'L' + now.toString(36) + Math.random().toString(36).slice(2, 6), name, c:now, t:now, label:lookLabel(st), state:st, img, thumb:'' };
+  looksGrab(th => { L.thumb = th; LOOKS.list.unshift(L);
+    const gone = LOOKS.list.length > LOOKS.MAX ? LOOKS.list.pop() : null;   // full: the oldest look makes room (as a real delete, so it syncs)
+    if (!looksStore()){ LOOKS.list.shift(); if (gone) LOOKS.list.push(gone); return; }
+    if (gone) lookGone(gone.id, lookT(gone.id));
+    cloudPut(L.id);
     LOOKS.sel = L.id; looksRender(); flash('Saved · ' + name); });
   return name;
 }
@@ -4056,9 +4085,9 @@ function lookUpdate(id){
   const L = LOOKS.list.find(x => x.id === id); if (!L) return;
   const { st, img } = lookSnapshot();
   looksGrab(th => { const old = { state:L.state, img:L.img, thumb:L.thumb, label:L.label, t:L.t };
-    Object.assign(L, { state:st, img, thumb:th || L.thumb, label:lookLabel(st), t:Date.now() });
+    Object.assign(L, { state:st, img, thumb:th || L.thumb, label:lookLabel(st), t:lookT(id) });
     if (!looksStore()){ Object.assign(L, old); return; }
-    looksRender(); flash('Updated · ' + L.name); });
+    cloudPut(id); looksRender(); flash('Updated · ' + L.name); });
 }
 function lookApply(id){
   const L = LOOKS.list.find(x => x.id === id); if (!L) return;
@@ -4068,10 +4097,11 @@ function lookApply(id){
   remoteQueue(); if (L.img) remoteImage();
   LOOKS.sel = id; looksRender(); flash(L.name);
 }
-function lookDelete(id){ const i = LOOKS.list.findIndex(x => x.id === id); if (i < 0) return; const [L] = LOOKS.list.splice(i, 1);
-  if (!looksStore()){ LOOKS.list.splice(i, 0, L); return; } if (LOOKS.sel === id) LOOKS.sel = ''; looksRender(); flash('Deleted · ' + L.name); }
+function lookDelete(id){ const i = LOOKS.list.findIndex(x => x.id === id); if (i < 0) return; const t = lookT(id), [L] = LOOKS.list.splice(i, 1);
+  if (!looksStore()){ LOOKS.list.splice(i, 0, L); return; } lookGone(id, t); if (LOOKS.sel === id) LOOKS.sel = ''; looksRender(); flash('Deleted · ' + L.name); }
 function lookRename(id, name){ const L = LOOKS.list.find(x => x.id === id); name = String(name || '').replace(/\s+/g, ' ').trim().slice(0, 40);
-  if (!L || !name || name === L.name) { looksRender(); return; } const old = L.name; L.name = name; if (!looksStore()) L.name = old; looksRender(); }
+  if (!L || !name || name === L.name) { looksRender(); return; } const old = L.name, ot = L.t; L.name = name; L.t = lookT(id);
+  if (!looksStore()){ L.name = old; L.t = ot; } else cloudPut(id); looksRender(); }
 function looksRender(){
   const box = $('#looksList'); if (!box) return; box.innerHTML = '';
   $('#looksTag').textContent = LOOKS.list.length ? LOOKS.list.length + ' saved' : 'none yet';
@@ -4105,6 +4135,245 @@ function looksInit(){
     if (LOOKS.del && now - LOOKS.delT < 3500){ lookDelete(LOOKS.sel); return; }
     LOOKS.del = 1; LOOKS.delT = now; b.textContent = 'Tap again to delete'; setTimeout(() => { if (LOOKS.del && performance.now() - LOOKS.delT >= 3400){ LOOKS.del = 0; b.textContent = 'Delete'; } }, 3500); });
   window.addEventListener('storage', e => { if (e.key === LOOKS.KEY){ looksLoad(); looksRender(); } });
+  cloudBoot();
+}
+/* ================= cloud sync (v11): sign in with Google and your saved looks follow you to every device ================= */
+// Looks still live in this device's storage. Signed in, each look is also kept in your account (Firebase Firestore,
+// users/{uid}/looks/{id}) and changes made on your other devices arrive live. The newest change wins (t, ms); a deleted
+// look leaves a small marker {del, t} so the delete reaches devices that were offline, and the Firestore rules refuse an
+// update older than what is stored, so a device that was asleep can't overwrite a newer edit. The sign-in code (Firebase
+// compat SDK) loads only when someone signs in. The website uses Google's pop-up; the Windows and Android apps run
+// Google's own sign-in outside the page (Google blocks its login inside app windows) and hand the ID token back through
+// window.__sdGoogleToken(token).
+const CLOUD_CFG = {"apiKey":"AIzaSyBJE0K9TGiWCFuqLLGfTj5JO62FHEwiM_8","authDomain":"spectral-drift.firebaseapp.com","projectId":"spectral-drift","storageBucket":"spectral-drift.firebasestorage.app","messagingSenderId":"1063892958425","appId":"1:1063892958425:web:52183ae694fa1a00c952c8"};   // Firebase web config; filled in at build time
+const CLOUD = { V:'12.19.0', LIB:'', HOSTS:['aaronaudio09.github.io', 'localhost', '127.0.0.1'], KEY:'spectral-drift-cloud', TOMB:'spectral-drift-looks-del',
+  tomb:{}, seen:{}, sdk:null, ready:false, auth:null, db:null, user:null, uid:'', unsub:null, gen:0, synced:false,
+  st:'off', msg:'', pend:0, wait:null, del:0, delT:0, retry:0 };
+function cloudWay(){
+  if (WALL || !CLOUD_CFG || !CLOUD_CFG.apiKey) return '';
+  if ((android && typeof android.googleSignIn === 'function') || (window.SDDesktop && typeof window.SDDesktop.googleSignIn === 'function')) return 'app';
+  return CLOUD.HOSTS.includes(location.hostname) ? 'web' : '';   // only addresses listed in Firebase's authorized domains can open the pop-up
+}
+
+/* ---------- delete markers and edit times ---------- */
+function tombLoad(){ try { const j = JSON.parse(localStorage.getItem(CLOUD.TOMB) || '{}'); CLOUD.tomb = j && typeof j === 'object' && !Array.isArray(j) ? j : {}; } catch(e){ CLOUD.tomb = {}; } }
+function tombStore(){
+  const ids = Object.keys(CLOUD.tomb);
+  if (ids.length > 400) ids.sort((a, b) => CLOUD.tomb[a] - CLOUD.tomb[b]).slice(0, ids.length - 400).forEach(id => { delete CLOUD.tomb[id]; });
+  try { localStorage.setItem(CLOUD.TOMB, JSON.stringify(CLOUD.tomb)); } catch(e){}
+}
+const lookC = L => +L.c || parseInt(String(L.id).slice(1, 9), 36) || +L.t || 0;   // made-at time (ids start with Date.now() in base 36)
+function looksSort(){ LOOKS.list.sort((a, b) => lookC(b) - lookC(a)); }
+// A new edit always beats the version this device last saw, even if this device's clock runs a little slow.
+function lookT(id){ const L = LOOKS.list.find(x => x.id === id); return Math.max(Date.now(), (CLOUD.seen[id] || 0) + 1, (L ? +L.t || 0 : 0) + 1); }
+function lookGone(id, t){ CLOUD.tomb[id] = t || Date.now(); tombStore(); cloudPut(id); }   // after a look leaves LOOKS.list
+
+/* ---------- account copy <-> local look ---------- */
+const dataURL = s => typeof s === 'string' && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(s) ? s : '';
+function lookDoc(L){ return { name:L.name, label:L.label || '', c:lookC(L), t:+L.t || 0, state:JSON.stringify(L.state), img:L.img || '', thumb:L.thumb || '', v:1 }; }
+function docLook(id, d){
+  let st = null; try { st = JSON.parse(d.state); } catch(e){}
+  if (!st || typeof st !== 'object' || typeof st.engine !== 'string') return null;
+  let label = String(d.label || ''); if (!label) try { label = lookLabel(st); } catch(e){}
+  return { id, name:String(d.name || 'Look').slice(0, 40), c:+d.c || 0, t:+d.t || 0, label, state:st, img:dataURL(d.img), thumb:dataURL(d.thumb) };
+}
+const cloudCol = () => CLOUD.db.collection('users').doc(CLOUD.uid).collection('looks');
+function cloudPut(id){
+  if (!CLOUD.uid || !CLOUD.db) return;
+  const L = LOOKS.list.find(x => x.id === id), t = L ? 0 : CLOUD.tomb[id];
+  if (!L && !t) return;
+  cloudWrite(cloudCol().doc(id).set(L ? lookDoc(L) : { del:true, t }));
+}
+function cloudWrite(p){
+  CLOUD.pend++; cloudRender();
+  p.catch(e => { if (!e || e.code !== 'permission-denied') cloudFail(e); })   // refused = a newer copy is already stored; it arrives through the listener
+   .then(() => { CLOUD.pend = Math.max(0, CLOUD.pend - 1); cloudRender(); });
+}
+// Every change to the account copy (including this device's own writes) lands here. Per look, the newest of three wins:
+// this device's look (t), this device's delete marker, and the account's copy (a look or a delete marker).
+function cloudMerge(snap, gen){
+  if (gen !== CLOUD.gen) return;
+  const sure = !snap.metadata.fromCache, byId = new Map(LOOKS.list.map(L => [L.id, L])), seen = new Set(), put = [];
+  let changed = false, tombs = false;
+  snap.forEach(d => {
+    const id = d.id, c = d.data() || {}, ct = +c.t || 0, L = byId.get(id), lt = L ? +L.t || 0 : -1, tt = id in CLOUD.tomb ? +CLOUD.tomb[id] : -1, mine = d.metadata.hasPendingWrites;
+    seen.add(id); if (!mine) CLOUD.seen[id] = Math.max(CLOUD.seen[id] || 0, ct);
+    if (ct > lt && ct > tt){                                   // the account holds the newest version
+      if (c.del){ if (L){ LOOKS.list.splice(LOOKS.list.indexOf(L), 1); byId.delete(id); if (LOOKS.sel === id) LOOKS.sel = ''; changed = true; } }
+      else { const N = docLook(id, c); if (!N) return; if (L) Object.assign(L, N); else { LOOKS.list.push(N); byId.set(id, N); } changed = true; }
+      if (tt >= 0 && !mine){ delete CLOUD.tomb[id]; tombs = true; }
+    } else if (lt > ct && lt > tt) put.push(id);               // this device holds the newest version
+    else if (tt > ct && tt > lt) put.push(id);                 // this device deleted it last
+    else if (tt >= 0 && c.del && !mine){ delete CLOUD.tomb[id]; tombs = true; }   // the delete is safely stored
+  });
+  if (sure && !CLOUD.synced){                                  // first full picture of the account this session
+    CLOUD.synced = true;
+    for (const L of LOOKS.list) if (!seen.has(L.id)) put.push(L.id);                                   // made before signing in, or offline
+    for (const id of Object.keys(CLOUD.tomb)) if (!seen.has(id)){ delete CLOUD.tomb[id]; tombs = true; }   // deleted before it ever reached the account
+  }
+  if (changed){ looksSort(); looksStore(); looksRender(); }
+  if (tombs) tombStore();
+  put.forEach(cloudPut);
+  if (CLOUD.st !== 'busy') CLOUD.st = sure ? 'on' : 'wait';
+  cloudRender();
+}
+
+/* ---------- Firebase ---------- */
+function cloudSDK(){
+  if (window.firebase && window.firebase.auth && window.firebase.firestore) return Promise.resolve();
+  if (CLOUD.sdk) return CLOUD.sdk;
+  const base = CLOUD.LIB || 'https://cdn.jsdelivr.net/npm/firebase@' + CLOUD.V + '/';
+  const one = f => new Promise((ok, no) => { const s = el('script'); s.src = base + f; s.async = false; s.onload = ok; s.onerror = () => no(new Error('load ' + f)); document.head.appendChild(s); });
+  CLOUD.sdk = one('firebase-app-compat.js').then(() => Promise.all([one('firebase-auth-compat.js'), one('firebase-firestore-compat.js')]));
+  CLOUD.sdk.catch(() => { CLOUD.sdk = null; });
+  return CLOUD.sdk;
+}
+function cloudInit(){
+  if (CLOUD.ready) return Promise.resolve();
+  return cloudSDK().then(() => {
+    if (CLOUD.ready) return;
+    const fb = window.firebase, app = fb.apps.length ? fb.app() : fb.initializeApp(CLOUD_CFG);
+    CLOUD.auth = app.auth(); CLOUD.db = app.firestore(); CLOUD.ready = true;
+    return new Promise(ok => { let first = true;
+      CLOUD.auth.onAuthStateChanged(u => {
+        if (u){ if (u.uid !== CLOUD.uid) cloudStart(u); }
+        else if (CLOUD.uid) cloudStop();
+        else if (first) try { localStorage.removeItem(CLOUD.KEY); } catch(e){}   // the saved session is gone
+        if (first){ first = false; ok(); } }); });
+  });
+}
+function cloudStart(u){
+  CLOUD.user = u; CLOUD.uid = u.uid; CLOUD.gen++; CLOUD.synced = false; CLOUD.seen = {}; CLOUD.st = 'sync'; CLOUD.msg = ''; CLOUD.pend = 0;
+  try { localStorage.setItem(CLOUD.KEY, '1'); } catch(e){}
+  cloudListen(); cloudRender();
+}
+function cloudListen(){
+  if (CLOUD.unsub){ CLOUD.unsub(); CLOUD.unsub = null; }
+  const gen = CLOUD.gen;
+  CLOUD.unsub = cloudCol().onSnapshot({ includeMetadataChanges:true }, snap => cloudMerge(snap, gen), e => {
+    if (gen !== CLOUD.gen) return;
+    CLOUD.unsub = null; cloudFail(e);
+    clearTimeout(CLOUD.retry); CLOUD.retry = setTimeout(() => { if (gen === CLOUD.gen && CLOUD.uid){ CLOUD.st = 'sync'; cloudListen(); cloudRender(); } }, 30000);
+  });
+}
+function cloudStop(){
+  CLOUD.gen++; if (CLOUD.unsub){ CLOUD.unsub(); CLOUD.unsub = null; } clearTimeout(CLOUD.retry);
+  CLOUD.user = null; CLOUD.uid = ''; CLOUD.st = 'off'; CLOUD.msg = ''; CLOUD.pend = 0; CLOUD.synced = false;
+  try { localStorage.removeItem(CLOUD.KEY); } catch(e){}
+  cloudRender();
+}
+function cloudFail(e){ CLOUD.st = 'err'; CLOUD.msg = cloudMsg(e); cloudRender(); try { console.warn('[cloud]', e && (e.code || e.message), e); } catch(_){} }
+function cloudMsg(e){
+  const c = String((e && (e.code || e.message)) || '');
+  if (/popup-blocked/.test(c)) return 'The browser blocked Google\'s window. Allow pop-ups for this site and try again.';
+  if (/network|unavailable|offline|^load /.test(c)) return 'Can\'t reach your account right now. Your looks stay saved on this device.';
+  if (/unauthorized-domain|operation-not-allowed|api-key|configuration-not-found|invalid-credential|argument-error/.test(c)) return 'Sign-in isn\'t set up for this copy yet.';
+  if (/permission-denied/.test(c)) return 'Sync paused: your account refused access.';
+  if (/quota|resource-exhausted/.test(c)) return 'Sync is resting until tomorrow (daily limit). Your looks stay saved here.';
+  return 'Sign-in didn\'t work. Try again.';
+}
+const cloudQuiet = e => /popup-closed-by-user|cancelled-popup-request|user-cancelled|app\/canceled/.test(String((e && e.code) || ''));
+
+/* ---------- sign in / out / delete ---------- */
+// The apps open Google's sign-in themselves and call this with the ID token (or with no token and a reason).
+window.__sdGoogleToken = (tok, err) => { const w = CLOUD.wait; CLOUD.wait = null; if (!w) return; if (tok) w.ok(String(tok)); else w.no({ code:'app/' + (err || 'canceled') }); };
+function cloudAppToken(){
+  return new Promise((ok, no) => {
+    if (CLOUD.wait) CLOUD.wait.no({ code:'app/canceled' });
+    CLOUD.wait = { ok, no };
+    try { ((android && typeof android.googleSignIn === 'function') ? android : window.SDDesktop).googleSignIn(); } catch(e){ CLOUD.wait = null; no(e); }
+  });
+}
+const cloudCred = tok => window.firebase.auth.GoogleAuthProvider.credential(tok);
+function cloudSignIn(){
+  const way = cloudWay(); if (!way || CLOUD.st === 'busy' || CLOUD.user) return;
+  CLOUD.st = 'busy'; cloudRender();
+  cloudInit().then(() => {
+    if (CLOUD.user) return;
+    if (way === 'web') return CLOUD.auth.signInWithPopup(new window.firebase.auth.GoogleAuthProvider());
+    return cloudAppToken().then(tok => CLOUD.auth.signInWithCredential(cloudCred(tok)));
+  }).then(() => {
+    const u = CLOUD.auth && CLOUD.auth.currentUser;
+    if (u && u.uid !== CLOUD.uid) cloudStart(u);
+    if (CLOUD.user){ if (CLOUD.st === 'busy') CLOUD.st = 'sync'; flash('Signed in · your looks sync'); } else CLOUD.st = 'off';
+    cloudRender();
+  }, e => { CLOUD.st = CLOUD.user ? 'on' : 'off'; cloudRender(); try { console.warn('[cloud] sign-in', e && e.code, e && e.message); } catch(_){}
+    if (cloudQuiet(e)) return;
+    // Pop-ups only open straight from a click; if Firebase was still loading, the window got blocked. It's ready now.
+    if (/popup-blocked/.test(String(e && e.code)) && !CLOUD.blocked){ CLOUD.blocked = 1; toast('Press Sign in with Google once more to open Google\'s window.'); return; }
+    toast(cloudMsg(e)); });
+}
+function cloudSignOut(){
+  if (!CLOUD.auth || !CLOUD.user) return;
+  CLOUD.auth.signOut().catch(() => {});
+  try {
+    if (android && typeof android.googleSignOut === 'function') android.googleSignOut();
+    if (window.SDDesktop && typeof window.SDDesktop.googleSignOut === 'function') window.SDDesktop.googleSignOut();
+  } catch(e){}
+  flash('Signed out · your looks stay on this device');
+}
+// Google asks for a fresh sign-in before an account can be deleted if the last one was a while ago.
+function cloudFresh(u){
+  return cloudWay() === 'web' ? u.reauthenticateWithPopup(new window.firebase.auth.GoogleAuthProvider())
+    : cloudAppToken().then(tok => u.reauthenticateWithCredential(cloudCred(tok)));
+}
+function cloudWipe(){
+  if (!CLOUD.uid) return;
+  const u = CLOUD.user, col = cloudCol();
+  CLOUD.gen++; if (CLOUD.unsub){ CLOUD.unsub(); CLOUD.unsub = null; }   // stop listening first so the deletes don't echo back
+  CLOUD.st = 'busy'; cloudRender();
+  col.get().then(qs => {
+    const all = []; let b = CLOUD.db.batch(), n = 0;
+    qs.forEach(d => { b.delete(d.ref); if (++n % 450 === 0){ all.push(b.commit()); b = CLOUD.db.batch(); } });
+    all.push(b.commit()); return Promise.all(all);
+  }).then(() => {
+    CLOUD.tomb = {}; tombStore();
+    return u.delete().catch(e => e && e.code === 'auth/requires-recent-login' ? cloudFresh(u).then(() => u.delete()) : Promise.reject(e))
+      .then(() => { toast('Deleted your account and its cloud looks. The looks on this device stay here.'); },
+            () => { toast('Deleted your cloud looks. To remove the account too, sign in again and repeat.'); return CLOUD.auth.signOut(); });
+  }).catch(e => {
+    toast(cloudMsg(e)); const cu = CLOUD.auth && CLOUD.auth.currentUser;
+    if (cu){ CLOUD.uid = ''; cloudStart(cu); } else cloudStop();
+  });
+}
+
+/* ---------- panel ---------- */
+function cloudRender(){
+  const row = $('#cloudRow'); if (!row) return;
+  const way = cloudWay(); row.hidden = !way; if (!way) return;
+  const on = !!CLOUD.user, busy = CLOUD.st === 'busy';
+  $('#btnCloudIn').hidden = on; $('#cloudNote').hidden = on; $('#cloudOn').hidden = !on;
+  $('#cloudInTxt').textContent = busy && !on ? 'Signing in…' : 'Sign in with Google';
+  const g = $('#cloudG');   // Google's mark, served by Google (the asset FirebaseUI uses); loaded the first time the row shows
+  if (g && !g.getAttribute('src')){ g.addEventListener('load', () => { g.hidden = false; }); g.addEventListener('error', () => g.remove()); g.src = 'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg'; }
+  if (!on) return;
+  const st = CLOUD.st === 'err' ? 'err' : CLOUD.st === 'wait' ? 'wait' : CLOUD.st === 'on' && !CLOUD.pend ? 'on' : 'sync';
+  $('#cloudDot').className = 'cdot ' + st;
+  $('#cloudState').textContent = busy ? 'Working…' : st === 'on' ? 'Synced' : st === 'wait' ? 'Offline · syncs when you\'re back' : st === 'err' ? CLOUD.msg : 'Syncing…';
+  $('#cloudWho').textContent = CLOUD.user.email || 'your Google account';
+}
+function cloudBoot(){
+  if (WALL) return;
+  tombLoad();
+  window.addEventListener('storage', e => { if (e.key === CLOUD.TOMB) tombLoad(); });
+  if (!$('#cloudRow')) return;
+  $('#btnCloudIn').addEventListener('click', cloudSignIn);
+  $('#btnCloudOut').addEventListener('click', cloudSignOut);
+  $('#btnCloudDel').addEventListener('click', e => { const b = e.currentTarget, now = performance.now();
+    if (CLOUD.del && now - CLOUD.delT < 3500){ CLOUD.del = 0; b.textContent = 'Delete cloud copy'; cloudWipe(); return; }
+    CLOUD.del = 1; CLOUD.delT = now; b.textContent = 'Tap again to delete';
+    setTimeout(() => { if (CLOUD.del && performance.now() - CLOUD.delT >= 3400){ CLOUD.del = 0; b.textContent = 'Delete cloud copy'; } }, 3500); });
+  cloudRender();
+  let was = false; try { was = localStorage.getItem(CLOUD.KEY) === '1'; } catch(e){}
+  if (was && cloudWay()) cloudInit().catch(e => { CLOUD.st = 'off'; cloudRender(); try { console.warn('[cloud]', e); } catch(_){} });
+  else if (cloudWay() === 'web'){
+    // Browsers only allow Google's pop-up straight from a click, so get Firebase ready a moment before one is likely:
+    // when the row has been on screen for a bit, or the pointer or focus reaches the button.
+    const pre = () => { if (!CLOUD.ready && !CLOUD.sdk) cloudInit().catch(() => {}); };
+    ['pointerenter', 'focus', 'touchstart'].forEach(ev => $('#btnCloudIn').addEventListener(ev, pre, { once:true, passive:true }));
+    try { let t = 0; const io = new IntersectionObserver(es => { clearTimeout(t); if (es.some(e => e.isIntersecting)) t = setTimeout(() => { io.disconnect(); pre(); }, 1500); });
+      io.observe($('#cloudRow')); } catch(e){}
+  }
 }
 const cycleUI = () => { const on = S.autoCycle; $('#cycle').disabled = !on; $('#beatSwitch').disabled = !on; };
 $('#autoCycle').checked = S.autoCycle; $('#autoCycle').addEventListener('change', e => { S.autoCycle = e.target.checked; lastSwitch = performance.now(); cycleUI(); save(); });
