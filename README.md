@@ -24,7 +24,7 @@ Saved looks stay on the device you made them on. To have them everywhere, press 
 
 ## On a Mac
 
-Use Chrome or Edge. Press ▶ for the built-in demo, load a track, or click **Mic**. To visualize what your Mac is playing (Spotify, YouTube…), click **System** and share your screen with **Share system audio** turned on; that needs Chrome 141 or newer on macOS 14.2 or newer. The video is dropped straight away; nothing is recorded or uploaded.
+Use Chrome or Edge. Press ▶ for the built-in demo, or open **Source** to load a track or pick **Microphone**. To visualize what your Mac is playing (Spotify, YouTube…), pick **Source → System audio** and share your screen with **Share system audio** turned on; that needs Chrome 141 or newer on macOS 14.2 or newer. The video is dropped straight away; nothing is recorded or uploaded.
 
 ## Keys
 
