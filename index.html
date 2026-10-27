@@ -4,7 +4,8 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 /* Layout: full-bleed stage (MilkDrop WebGL, AVS-style pixel stack, Classic analyzer, Reactor feedback) with a control dock —
-   right rail on wide screens, bottom sheet on phones. Transport always shows Visualizer + Effect dropdowns; dials live below. Dark by design. */
+   right rail on wide screens, bottom sheet on phones. The transport always shows the few controls everyone uses (visualizer,
+   scene, play and source, brightness, volume, save); Feel and the visualizer's own dials sit below; everything else is under More. Dark by design. */
 :root{
   --bg:#07080c; --panel:#0f121a; --panel-2:#161a25; --line:#232a3a; --line-2:#2f3750;
   --fg:#e9ecf4; --muted:#8c95aa; --dim:#5d6578;
@@ -78,6 +79,25 @@ input[type=range]:disabled{opacity:.4}
 .vol span{user-select:none;-webkit-user-select:none}
 .vol output{min-width:32px;font-family:var(--font-data);font-size:10px;text-align:right}
 .sel-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.step-row{margin-top:-2px}
+.src{position:relative;flex:none}
+.src-menu{position:absolute;right:0;top:calc(100% + 6px);z-index:40;display:grid;gap:6px;min-width:178px;padding:8px;background:var(--panel);border:1px solid var(--line-2);border-radius:var(--radius);box-shadow:0 12px 30px rgba(0,0,0,.6)}
+.src-menu .btn{display:block;width:100%;text-align:left}
+.mix-row{display:flex;align-items:center;gap:10px;min-width:0}
+.mix-row .vol{margin-left:0;flex:1 1 0;min-width:0}
+.mix-row .vol input{width:auto;flex:1 1 auto;min-width:36px}
+.mix-row .vol.bright{flex-grow:1.5}
+.savebtn{display:inline-flex;align-items:center;gap:5px;flex:none}
+.savebtn svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}
+.focus{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.chip{background:var(--panel-2);color:var(--fg);border:1px solid var(--line-2);border-radius:999px;padding:5px 2px;font-size:11px;font-weight:600;letter-spacing:.03em;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:inherit}
+.chip:hover{border-color:var(--accent)}
+.chip.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.panel .fold{justify-self:start}
+#secMore .subh{margin:6px 0 0;padding-top:10px;border-top:1px solid var(--line);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:8px}
+#secMore .subh:first-child{margin-top:0;padding-top:0;border-top:0}
+#secMore .subh small{font-weight:400;letter-spacing:0;text-transform:none;color:var(--dim);font-family:var(--font-data);font-size:11px;margin-left:auto}
+@media (max-width:899px){ .src-menu{top:auto;bottom:calc(100% + 6px)} }
 .sel-row .lab-sel{min-width:0}
 
 .dock-body{overflow:auto;min-height:0;padding-block:14px;display:grid;gap:16px;align-content:start;overscroll-behavior:contain}
@@ -254,6 +274,7 @@ body.ui-hidden.interactive .showbtn{display:grid}
         </div>
         <div class="lab-sel"><span id="fxLabel">Effect</span>
           <select id="presetSel" aria-label="MilkDrop preset"></select>
+          <select id="avsPreset" aria-label="AVS preset" hidden></select>
           <select id="fxsel-hyper" aria-label="Hyperspace scene" hidden></select>
           <select id="fxsel-deep" aria-label="3D scene" hidden></select>
           <select id="fxsel-ink" aria-label="Ink dials" hidden></select>
@@ -262,10 +283,14 @@ body.ui-hidden.interactive .showbtn{display:grid}
           <select id="fxsel-laser" aria-label="Laser dials" hidden></select>
           <select id="fxsel-weave" aria-label="Sound Weaver dials" hidden></select>
           <select id="fxsel-box" aria-label="Music Box dials" hidden></select>
-          <select id="fxsel-avs" aria-label="AVS effect" hidden></select>
           <select id="fxsel-classic" aria-label="Classic part" hidden></select>
           <select id="fxsel-reactor" aria-label="Reactor component" hidden></select>
         </div>
+      </div>
+      <div class="row step-row">
+        <button class="btn sm" id="btnStepPrev" type="button">◀ Prev</button>
+        <button class="btn sm" id="btnStepRand" type="button">Random</button>
+        <button class="btn sm" id="btnStepNext" type="button">Next ▶</button>
       </div>
       <div class="t-row">
         <button class="btn-play" id="btnPlay" aria-label="Play">
@@ -277,26 +302,180 @@ body.ui-hidden.interactive .showbtn{display:grid}
           <div class="name" id="trackName">Demo loop</div>
           <div class="sub" id="trackSub">124 BPM · synth house, 8 bars, loops</div>
         </div>
+        <div class="src">
+          <button class="btn sm" id="btnSource" type="button" aria-haspopup="true" aria-expanded="false">Source ▾</button>
+          <div class="src-menu" id="srcMenu" hidden>
+            <button class="btn sm" id="btnDemo" type="button">Demo loop</button>
+            <label class="btn sm" for="fileIn">Load a track…</label>
+            <button class="btn sm" id="btnDevice" type="button" title="What this device is playing" hidden>Device audio</button>
+            <button class="btn sm" id="btnMic" type="button" title="Listen through the microphone">Microphone</button>
+            <button class="btn sm" id="btnSys" type="button" title="Capture what the computer is playing (desktop Chrome/Edge)">System audio</button>
+          </div>
+        </div>
+        <input type="file" id="fileIn" accept="audio/*" hidden>
+        <input type="file" id="imgIn" accept="image/*" hidden>
       </div>
       <div class="seek">
         <span class="time" id="tCur">0:00</span>
         <input type="range" id="seek" min="0" max="1000" value="0" step="1" aria-label="Seek">
         <span class="time r" id="tDur">0:00</span>
       </div>
-      <div class="src-row">
-        <button class="btn sm" id="btnDemo">Demo</button>
-        <label class="btn sm" for="fileIn">Load track</label>
-        <input type="file" id="fileIn" accept="audio/*" hidden>
-        <input type="file" id="imgIn" accept="image/*" hidden>
-        <button class="btn sm" id="btnDevice" title="What this device is playing" hidden>Device audio</button>
-        <button class="btn sm" id="btnMic" title="Listen through the microphone">Mic</button>
-        <button class="btn sm" id="btnSys" title="Capture what the computer is playing (desktop Chrome/Edge)">System</button>
+      <div class="mix-row">
         <div class="vol bright"><span>Bright</span><input type="range" id="bright" min="20" max="150" step="1" value="100" aria-label="Brightness"><output id="oBright">100%</output></div>
         <div class="vol"><span>Vol</span><input type="range" id="vol" min="0" max="100" value="80" aria-label="Volume"></div>
+        <button class="btn sm savebtn" id="btnSaveLook" type="button" aria-label="Save this look"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg>Save</button>
       </div>
     </div>
 
     <div class="dock-body">
+      <section id="sec-feel">
+        <h2>Feel <small id="feelTag">full motion</small></h2>
+        <div class="ctl">
+          <label for="react">Reaction</label><output id="oReact">100%</output>
+          <input type="range" id="react" min="-100" max="100" step="1" value="0">
+          <span class="why">How strongly the music drives everything. Down calms a loud track, up wakes quiet music.</span>
+        </div>
+        <div class="ctl">
+          <label for="motion">Motion</label><output id="oMotion">100%</output>
+          <input type="range" id="motion" min="0" max="300" step="1" value="100">
+          <span class="why">How much shapes move. 0 = trance, 100% = normal, past 100% = overdrive.</span>
+        </div>
+        <div class="ctl">
+          <label for="colorPulse">Color pulse</label><output id="oColorPulse">50%</output>
+          <input type="range" id="colorPulse" min="0" max="300" step="1" value="50">
+          <span class="why">How much colors swell with the music, whatever Motion is set to.</span>
+        </div>
+        <div class="ctl">
+          <label for="trails">Trails</label><output id="oTrails">off</output>
+          <input type="range" id="trails" min="0" max="100" step="1" value="0">
+          <span class="why">Every frame leaves a fading copy behind, on any visualizer.</span>
+        </div>
+        <div class="lab-sel" id="focusWrap"><span>Music focus<em class="edtag" id="musicTag">balanced</em></span>
+          <div class="focus" id="musicFocus" role="radiogroup" aria-label="Music focus">
+            <button class="chip" type="button" role="radio" aria-checked="false" data-focus="balanced">Balanced</button>
+            <button class="chip" type="button" role="radio" aria-checked="false" data-focus="bass">Bass</button>
+            <button class="chip" type="button" role="radio" aria-checked="false" data-focus="melody">Melody</button>
+            <button class="chip" type="button" role="radio" aria-checked="false" data-focus="hits">Hits</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="sec-hyper" hidden>
+        <h2>Hyperspace <small>endless zoom · space · your image</small></h2>
+        <div class="panel" id="panel-hyper"></div>
+        <div class="row">
+          <button class="btn sm" id="btnHyMutate">Mutate dials</button>
+          <button class="btn sm" id="btnHyReset">Reset dials</button>
+        </div>
+        <p class="note" id="hyNote">Every scene is a shader that keeps generating new texture as it zooms, so the dive never runs out. The image scenes use a picture you load.</p>
+      </section>
+
+      <section id="sec-weave" hidden>
+        <h2>Sound Weaver <small>drag to look · scroll: speed</small></h2>
+        <div class="panel" id="panel-weave"></div>
+        <div class="row">
+          <button class="btn sm" data-mode-act="mutate">Mutate dials</button>
+          <button class="btn sm" data-mode-act="reset">Reset dials</button>
+        </div>
+      </section>
+      <section id="sec-box" hidden>
+        <h2>Music Box <small>every note draws its own line</small></h2>
+        <div class="panel" id="panel-box"></div>
+        <div class="row">
+          <button class="btn sm" data-mode-act="mutate">Mutate dials</button>
+          <button class="btn sm" data-mode-act="reset">Reset dials</button>
+        </div>
+      </section>
+      <section id="sec-deep" hidden>
+        <h2>3D Worlds <small>drag to look · scroll to zoom</small></h2>
+        <div class="panel" id="panel-deep"></div>
+        <div class="row">
+          <button class="btn sm" id="btnD3Mutate">Mutate dials</button>
+          <button class="btn sm" id="btnD3Reset">Reset dials</button>
+        </div>
+        <p class="note" id="d3Note">Every scene is raymarched on the graphics card: rays are traced into a mathematically defined world for each pixel, every frame. Double-click the picture to reset the camera.</p>
+      </section>
+      <section id="sec-ink" hidden>
+        <h2>Ink <small>drag to stir · tap to splash</small></h2>
+        <div class="panel" id="panel-ink"></div>
+        <div class="row">
+          <button class="btn sm" data-mode-act="mutate">Mutate dials</button>
+          <button class="btn sm" data-mode-act="reset">Reset dials</button>
+        </div>
+      </section>
+      <section id="sec-swarm" hidden>
+        <h2>Swarm <small>hold to pull · tap to blast</small></h2>
+        <div class="panel" id="panel-swarm"></div>
+        <div class="row">
+          <button class="btn sm" data-mode-act="mutate">Mutate dials</button>
+          <button class="btn sm" data-mode-act="reset">Reset dials</button>
+        </div>
+      </section>
+      <section id="sec-mandala" hidden>
+        <h2>Mandala <small>draw on the picture</small></h2>
+        <div class="panel" id="panel-mandala"></div>
+        <div class="row">
+          <button class="btn sm" data-mode-act="mutate">Mutate dials</button>
+          <button class="btn sm" data-mode-act="reset">Reset dials</button>
+        </div>
+      </section>
+      <section id="sec-laser" hidden>
+        <h2>Laser show <small>drag to spin · double-tap: new</small></h2>
+        <div class="panel" id="panel-laser"></div>
+        <div class="row">
+          <button class="btn sm" data-mode-act="mutate">Mutate dials</button>
+          <button class="btn sm" data-mode-act="reset">Reset dials</button>
+        </div>
+      </section>
+      <section id="sec-milk">
+        <h2>MilkDrop presets <small id="presetCount">0</small></h2>
+        <input type="text" id="presetSearch" placeholder="Filter presets…" aria-label="Filter presets">
+        <div class="lab-sel"><span>Edit this preset<em id="milkEdTag" class="edtag">as authored</em></span><select id="fxsel-milked" aria-label="Preset edit group"></select></div>
+        <div class="panel" id="panel-milked"></div>
+        <div class="row">
+          <button class="btn sm" id="btnMilkMutate">Mutate dials</button>
+          <button class="btn sm" id="btnMilkReset">Reset dials</button>
+        </div>
+        <div class="ctl">
+          <label for="blend">Blend</label><output id="oBlend">2.7 s</output>
+          <input type="range" id="blend" min="0" max="6" step="0.1" value="2.7">
+          <span class="why">Crossfade when the preset changes.</span>
+        </div>
+        <div class="row"><button class="btn sm" id="btnExtra">Load extra pack (+144)</button></div>
+        <p class="note" id="milkNote">Presets are compiled MilkDrop 2 files. The edit dials layer your changes on top of the running preset, the way MilkDrop's M menu did, and are remembered per preset.</p>
+      </section>
+
+      <section id="sec-avs" hidden>
+        <h2>AVS stack <small id="avsRes">320 px</small></h2>
+        <div class="lab-sel"><span>Edit effect</span><select id="fxsel-avs" aria-label="AVS effect" hidden></select></div>
+        <div class="panel" id="panel-avs"></div>
+        <div class="row">
+          <button class="btn sm" data-mode-act="mutate">Mutate dials</button>
+          <button class="btn sm" data-mode-act="reset">Reset dials</button>
+          <button class="btn sm" id="btnAvsClear">Clear screen</button>
+        </div>
+        <p class="note">Runs top to bottom like an AVS preset: Trans effects warp last frame's pixels, then Render effects draw on top. ● in the Effect list = enabled.</p>
+      </section>
+
+      <section id="sec-classic" hidden>
+        <h2>Classic <small>tap the picture: analyzer · scope · both</small></h2>
+        <div class="panel" id="panel-classic"></div>
+        <div class="row">
+          <button class="btn sm" data-mode-act="mutate">Mutate dials</button>
+          <button class="btn sm" data-mode-act="reset">Reset dials</button>
+        </div>
+      </section>
+
+      <section id="sec-reactor" hidden>
+        <h2>Reactor <small>feedback · ring · spokes · sparks</small></h2>
+        <div class="panel" id="panel-reactor"></div>
+        <div class="row">
+          <button class="btn sm" data-mode-act="mutate">Mutate dials</button>
+          <button class="btn sm" data-mode-act="reset">Reset dials</button>
+        </div>
+      </section>
+
+
       <section id="sec-looks">
         <h2>Saved looks <small id="looksTag">none yet</small></h2>
         <div class="cloud" id="cloudRow" hidden>
@@ -322,214 +501,57 @@ body.ui-hidden.interactive .showbtn{display:grid}
         </div>
       </section>
 
-      <section id="sec-music">
-        <h2>Music drive <small id="musicTag">balanced</small></h2>
-        <div class="bandm">
-          <span class="lab" style="color:var(--bass)">Bass</span><div class="meter"><i id="mbB" style="--c:var(--bass)"></i></div><span class="hitled" id="hbB" title="kick"></span><span class="val" id="cbB">—</span>
-          <span class="lab" style="color:var(--mid)">Mid</span><div class="meter"><i id="mbM" style="--c:var(--mid)"></i></div><span class="hitled" id="hbM" title="snare"></span><span class="val" id="cbM">—</span>
-          <span class="lab" style="color:var(--treb)">High</span><div class="meter"><i id="mbH" style="--c:var(--treb)"></i></div><span class="hitled" id="hbH" title="hats"></span><span class="val" id="cbH">—</span>
-        </div>
-        <div class="ctl">
-          <label for="drvB">Bass drive</label><output id="oDrvB">100%</output>
-          <input type="range" id="drvB" min="0" max="300" step="1" value="100">
-          <span class="why">Kick and bass: size, zoom, punch and shockwaves.</span>
-        </div>
-        <div class="ctl">
-          <label for="drvM">Mid drive</label><output id="oDrvM">100%</output>
-          <input type="range" id="drvM" min="0" max="300" step="1" value="100">
-          <span class="why">Vocals, snare and synths: spin, twist and color shifts.</span>
-        </div>
-        <div class="ctl">
-          <label for="drvH">High drive</label><output id="oDrvH">100%</output>
-          <input type="range" id="drvH" min="0" max="300" step="1" value="100">
-          <span class="why">Hats and cymbals: sparkle, flicker and fine detail.</span>
-        </div>
-        <div class="ctl">
-          <label for="drvK">Hits</label><output id="oDrvK">100%</output>
-          <input type="range" id="drvK" min="0" max="300" step="1" value="100">
-          <span class="why">Extra punch on every kick, snare and hat it catches (the lights above).</span>
-        </div>
-        <div class="ctl">
-          <label for="dyn">Dynamics</label><output id="oDyn">70%</output>
-          <input type="range" id="dyn" min="0" max="100" step="1" value="70">
-          <span class="why">How different quiet and loud look. 0 = every song fills the screen, 100% = quiet stays calm, loud explodes.</span>
-        </div>
-      </section>
-
-      <section id="sec-feel">
-        <h2>Feel <small id="feelTag">full motion</small></h2>
-        <div class="ctl">
-          <label for="motion">Motion</label><output id="oMotion">100%</output>
-          <input type="range" id="motion" min="0" max="300" step="1" value="100">
-          <span class="why">How hard shapes react. 0 = trance, 100% = normal, past 100% = overdrive.</span>
-        </div>
-        <div class="ctl">
-          <label for="motionSens">Motion sensitivity</label><output id="oMotionSens">1.0×</output>
-          <input type="range" id="motionSens" min="-100" max="100" step="1" value="0">
-          <span class="why">Gain on the music before it moves anything: 0.1× to 10×.</span>
-        </div>
-        <div class="ctl">
-          <label for="colorPulse">Color pulse</label><output id="oColorPulse">50%</output>
-          <input type="range" id="colorPulse" min="0" max="300" step="1" value="50">
-          <span class="why">Saturation and brightness swell with the music, whatever Motion is set to.</span>
-        </div>
-        <div class="ctl">
-          <label for="colorSens">Color sensitivity</label><output id="oColorSens">1.0×</output>
-          <input type="range" id="colorSens" min="-100" max="100" step="1" value="0">
-        </div>
-        <div class="ctl">
-          <label for="trails">Trails / echo</label><output id="oTrails">off</output>
-          <input type="range" id="trails" min="0" max="100" step="1" value="0">
-          <span class="why">Every frame leaves a fading copy behind, on any visualizer.</span>
-        </div>
-        <div class="lab-sel"><span>Echo motion</span><select id="echoMode" aria-label="Echo motion"></select></div>
-        <div class="ctl">
-          <label for="echoHue">Echo color drift</label><output id="oEchoHue">0%</output>
-          <input type="range" id="echoHue" min="0" max="100" step="1" value="0">
-        </div>
-      </section>
-
-      <section id="sec-hyper" hidden>
-        <h2>Hyperspace <small>endless zoom · space · your image</small></h2>
-        <div class="row">
-          <button class="btn sm" id="btnHyPrev">◀ Prev</button>
-          <button class="btn sm" id="btnHyRand">Random</button>
-          <button class="btn sm" id="btnHyNext">Next ▶</button>
-        </div>
-        <div class="panel" id="panel-hyper"></div>
-        <div class="row">
-          <button class="btn sm" id="btnHyMutate">Mutate dials</button>
-          <button class="btn sm" id="btnHyReset">Reset scene</button>
-        </div>
-        <div class="ctl">
-          <label for="hyq">Render quality</label><output id="oHyq">auto</output>
-          <input type="range" id="hyq" min="0" max="2" step="1" value="1">
-          <span class="why">Internal resolution. Drop it if a phone stutters.</span>
-        </div>
-        <p class="note" id="hyNote">Every scene is a shader that keeps generating new texture as it zooms, so the dive never runs out. The image scenes use a picture you load.</p>
-      </section>
-
-      <section id="sec-weave" hidden>
-        <h2>Sound Weaver <small>drag to look · scroll: speed</small></h2>
-        <div class="panel" id="panel-weave"></div>
-        <div class="row">
-          <button class="btn sm" data-mode-act="mutate">Mutate dials</button>
-          <button class="btn sm" data-mode-act="reset">Reset these dials</button>
-        </div>
-      </section>
-      <section id="sec-box" hidden>
-        <h2>Music Box <small>every note draws its own line</small></h2>
-        <div class="panel" id="panel-box"></div>
-        <div class="row">
-          <button class="btn sm" data-mode-act="mutate">Mutate dials</button>
-          <button class="btn sm" data-mode-act="reset">Reset these dials</button>
-        </div>
-      </section>
-      <section id="sec-deep" hidden>
-        <h2>3D Worlds <small>drag to look · scroll to zoom</small></h2>
-        <div class="row">
-          <button class="btn sm" id="btnD3Prev">◀ Prev</button>
-          <button class="btn sm" id="btnD3Rand">Random</button>
-          <button class="btn sm" id="btnD3Next">Next ▶</button>
-        </div>
-        <div class="panel" id="panel-deep"></div>
-        <div class="row">
-          <button class="btn sm" id="btnD3Mutate">Mutate dials</button>
-          <button class="btn sm" id="btnD3Reset">Reset scene</button>
-        </div>
-        <div class="ctl">
-          <label for="d3q">Render quality</label><output id="oD3q">auto</output>
-          <input type="range" id="d3q" min="0" max="2" step="1" value="1">
-          <span class="why">Fast / auto / sharp. It also drops resolution by itself when the graphics card can't keep up.</span>
-        </div>
-        <p class="note" id="d3Note">Every scene is raymarched on the graphics card: rays are traced into a mathematically defined world for each pixel, every frame. Double-click the picture to reset the camera.</p>
-      </section>
-      <section id="sec-ink" hidden>
-        <h2>Ink <small>drag to stir · tap to splash</small></h2>
-        <div class="panel" id="panel-ink"></div>
-        <div class="row">
-          <button class="btn sm" data-mode-act="mutate">Mutate dials</button>
-          <button class="btn sm" data-mode-act="reset">Reset these dials</button>
-        </div>
-      </section>
-      <section id="sec-swarm" hidden>
-        <h2>Swarm <small>hold to pull · tap to blast</small></h2>
-        <div class="panel" id="panel-swarm"></div>
-        <div class="row">
-          <button class="btn sm" data-mode-act="mutate">Mutate dials</button>
-          <button class="btn sm" data-mode-act="reset">Reset these dials</button>
-        </div>
-      </section>
-      <section id="sec-mandala" hidden>
-        <h2>Mandala <small>draw on the picture</small></h2>
-        <div class="panel" id="panel-mandala"></div>
-        <div class="row">
-          <button class="btn sm" data-mode-act="mutate">Mutate dials</button>
-          <button class="btn sm" data-mode-act="reset">Reset these dials</button>
-        </div>
-      </section>
-      <section id="sec-laser" hidden>
-        <h2>Laser show <small>drag to spin · double-tap: new</small></h2>
-        <div class="panel" id="panel-laser"></div>
-        <div class="row">
-          <button class="btn sm" data-mode-act="mutate">New figure</button>
-          <button class="btn sm" data-mode-act="reset">Reset these dials</button>
-        </div>
-      </section>
-      <section id="sec-milk">
-        <h2>MilkDrop presets <small id="presetCount">0</small></h2>
-        <input type="text" id="presetSearch" placeholder="Filter presets…" aria-label="Filter presets">
-        <div class="row">
-          <button class="btn sm" id="btnPrev">◀ Prev</button>
-          <button class="btn sm" id="btnRand">Random</button>
-          <button class="btn sm" id="btnNext">Next ▶</button>
-        </div>
-        <div class="lab-sel"><span>Edit this preset<em id="milkEdTag" class="edtag">as authored</em></span><select id="fxsel-milked" aria-label="Preset edit group"></select></div>
-        <div class="panel" id="panel-milked"></div>
-        <div class="row"><button class="btn sm" id="btnMilkReset">Reset edits</button></div>
-        <label class="chk on-main"><input type="checkbox" id="autoCycle"> Cycle presets automatically</label>
-        <div class="ctl">
-          <label for="cycle">Every</label><output id="oCycle">20 s</output>
-          <input type="range" id="cycle" min="5" max="120" step="5" value="20">
-        </div>
-        <label class="chk"><input type="checkbox" id="beatSwitch"> Switch on a strong beat instead</label>
-        <div class="ctl">
-          <label for="blend">Blend</label><output id="oBlend">2.7 s</output>
-          <input type="range" id="blend" min="0" max="6" step="0.1" value="2.7">
-          <span class="why">Crossfade when you change presets by hand.</span>
-        </div>
-        <div class="row"><button class="btn sm" id="btnExtra">Load extra pack (+144)</button></div>
-        <div class="ctl">
-          <label for="quality">Render quality</label><output id="oQuality">auto</output>
-          <input type="range" id="quality" min="0" max="2" step="1" value="1">
-          <span class="why">Pixel ratio 0.75 / auto / device. Drop it if a phone stutters.</span>
-        </div>
-        <p class="note" id="milkNote">Presets are compiled MilkDrop 2 files. The edit dials layer your changes on top of the running preset, the way MilkDrop's M menu did, and are remembered per preset.</p>
-      </section>
-
-      <section id="sec-avs" hidden>
-        <div class="panel" id="panel-avs"></div>
-        <h2>AVS stack <small id="avsRes">320 px</small></h2>
-        <div class="lab-sel"><span>Stack preset</span><select id="avsPreset" aria-label="AVS preset"></select></div>
-        <div class="row">
-          <button class="btn sm" id="btnAvsRand">Randomize</button>
-          <button class="btn sm" id="btnAvsClear">Clear screen</button>
-        </div>
-        <p class="note">Runs top to bottom like an AVS preset: Trans effects warp last frame's pixels, then Render effects draw on top. ● in the Effect list = enabled.</p>
-      </section>
-
-      <section id="sec-classic" hidden>
-        <div class="panel" id="panel-classic"></div>
-        <p class="note">Tap the picture to cycle analyzer → scope → both, the way clicking the main-window vis did.</p>
-      </section>
-
-      <section id="sec-reactor" hidden>
-        <div class="panel" id="panel-reactor"></div>
-      </section>
-
-      <details id="secReact">
-        <summary>Reactivity <small id="fftInfo">FFT 2048</small></summary>
+      <details id="secMore">
+        <summary>More <small>drive · fine tuning · auto-change · quality</small></summary>
         <div>
+          <h3 class="subh">Music drive</h3>
+          <div class="bandm">
+            <span class="lab" style="color:var(--bass)">Bass</span><div class="meter"><i id="mbB" style="--c:var(--bass)"></i></div><span class="hitled" id="hbB" title="kick"></span><span class="val" id="cbB">—</span>
+            <span class="lab" style="color:var(--mid)">Mid</span><div class="meter"><i id="mbM" style="--c:var(--mid)"></i></div><span class="hitled" id="hbM" title="snare"></span><span class="val" id="cbM">—</span>
+            <span class="lab" style="color:var(--treb)">High</span><div class="meter"><i id="mbH" style="--c:var(--treb)"></i></div><span class="hitled" id="hbH" title="hats"></span><span class="val" id="cbH">—</span>
+          </div>
+          <div class="ctl">
+            <label for="drvB">Bass drive</label><output id="oDrvB">100%</output>
+            <input type="range" id="drvB" min="0" max="300" step="1" value="100">
+            <span class="why">Kick and bass: size, zoom, punch and shockwaves.</span>
+          </div>
+          <div class="ctl">
+            <label for="drvM">Mid drive</label><output id="oDrvM">100%</output>
+            <input type="range" id="drvM" min="0" max="300" step="1" value="100">
+            <span class="why">Vocals, snare and synths: spin, twist and color shifts.</span>
+          </div>
+          <div class="ctl">
+            <label for="drvH">High drive</label><output id="oDrvH">100%</output>
+            <input type="range" id="drvH" min="0" max="300" step="1" value="100">
+            <span class="why">Hats and cymbals: sparkle, flicker and fine detail.</span>
+          </div>
+          <div class="ctl">
+            <label for="drvK">Hits</label><output id="oDrvK">100%</output>
+            <input type="range" id="drvK" min="0" max="300" step="1" value="100">
+            <span class="why">Extra punch on every kick, snare and hat it catches (the lights above).</span>
+          </div>
+          <div class="ctl">
+            <label for="dyn">Dynamics</label><output id="oDyn">70%</output>
+            <input type="range" id="dyn" min="0" max="100" step="1" value="70">
+            <span class="why">How different quiet and loud look. 0 = every song fills the screen, 100% = quiet stays calm, loud explodes.</span>
+          </div>
+          <h3 class="subh">Fine tuning</h3>
+          <div class="ctl">
+            <label for="motionSens">Motion sensitivity</label><output id="oMotionSens">1.0×</output>
+            <input type="range" id="motionSens" min="-100" max="100" step="1" value="0">
+            <span class="why">How strongly the music moves shapes, on top of Reaction.</span>
+          </div>
+          <div class="ctl">
+            <label for="colorSens">Color sensitivity</label><output id="oColorSens">1.0×</output>
+            <input type="range" id="colorSens" min="-100" max="100" step="1" value="0">
+            <span class="why">How strongly the music drives Color pulse, on top of Reaction.</span>
+          </div>
+          <div class="lab-sel"><span>Echo motion</span><select id="echoMode" aria-label="Echo motion"></select></div>
+          <div class="ctl">
+            <label for="echoHue">Echo color drift</label><output id="oEchoHue">0%</output>
+            <input type="range" id="echoHue" min="0" max="100" step="1" value="0">
+          </div>
+          <h3 class="subh">Reactivity <small id="fftInfo">FFT 2048</small></h3>
           <canvas id="spec" height="58"></canvas>
           <div class="bandkey">
             <span><i style="background:var(--bass)"></i>bass 20–250 Hz</span>
@@ -547,9 +569,9 @@ body.ui-hidden.interactive .showbtn{display:grid}
             <span class="bpm" id="bpm">— <b>BPM</b></span>
           </div>
           <div class="ctl">
-            <label for="sens">Sensitivity</label><output id="oSens">1.2×</output>
+            <label for="sens">Input gain</label><output id="oSens">1.2×</output>
             <input type="range" id="sens" min="0.1" max="6" step="0.05" value="1.2">
-            <span class="why">Gain on every band before smoothing. Turn up for mic input.</span>
+            <span class="why">Level of the sound before it is analysed. Turn up for a quiet mic.</span>
           </div>
           <div class="ctl">
             <label for="rel">Release</label><output id="oRel">0.80</output>
@@ -561,6 +583,10 @@ body.ui-hidden.interactive .showbtn{display:grid}
             <input type="range" id="thr" min="1.05" max="2.2" step="0.05" value="1.35">
             <span class="why">How sharply the bass must jump to count as a kick. Lower = more beats.</span>
           </div>
+          <h3 class="subh">Auto-change</h3>
+          <div class="lab-sel"><span>Change the scene or preset by itself</span><select id="autoSel" aria-label="Auto-change"></select></div>
+          <h3 class="subh">Render quality</h3>
+          <div class="lab-sel"><span>Every visualizer, on this device</span><select id="rqSel" aria-label="Render quality"><option value="0">Fast</option><option value="1">Auto</option><option value="2">Sharp</option></select></div>
         </div>
       </details>
 
@@ -568,9 +594,9 @@ body.ui-hidden.interactive .showbtn{display:grid}
         <summary>Keys</summary>
         <div class="keys">
           <kbd>Space</kbd><span>play / pause</span>
-          <kbd>N</kbd><span>next preset / scene</span>
-          <kbd>P</kbd><span>previous preset</span>
-          <kbd>R</kbd><span>random preset</span>
+          <kbd>N</kbd><span>next scene, preset or dial page</span>
+          <kbd>P</kbd><span>previous scene, preset or dial page</span>
+          <kbd>R</kbd><span>random scene or preset (new dials where there are no scenes)</span>
           <kbd>E</kbd><span>next visualizer</span>
           <kbd>F</kbd><span>fullscreen</span>
           <kbd>H</kbd><span>hide / show controls</span>
@@ -703,7 +729,7 @@ const HC = {
   hue:     { t:'range', k:'hue', l:'Hue shift', min:0, max:360, step:1, fmt:deg },
   hueSpeed:{ t:'range', k:'hueSpeed', l:'Hue drift', min:0, max:90, step:1, fmt:v=>v+'°/s' },
   sat:     { t:'range', k:'sat', l:'Saturation', min:0, max:2, step:0.01 },
-  bright:  { t:'range', k:'bright', l:'Brightness', min:0.2, max:3, step:0.01 },
+  bright:  { t:'range', k:'bright', l:'Scene brightness', min:0.2, max:3, step:0.01 },
   contrast:{ t:'range', k:'contrast', l:'Contrast', min:0.5, max:2, step:0.01 },
   chroma:  { t:'range', k:'chroma', l:'Chromatic split (beats widen it)', min:0, max:1.5, step:0.01 },
   vig:     { t:'range', k:'vig', l:'Vignette', min:0, max:1, step:0.01 },
@@ -996,7 +1022,7 @@ const D3C = {
   hue:    { t:'range', k:'hue', l:'Hue shift', min:0, max:360, step:1, fmt:v=>Math.round(v)+'°', tip:'Turns every color around the color wheel.' },
   hueSpeed:{ t:'range', k:'hueSpeed', l:'Hue drift', min:0, max:90, step:1, fmt:v=>v+'°/s', tip:'How fast the colors cycle on their own.' },
   sat:    { t:'range', k:'sat', l:'Saturation', min:0, max:2, step:0.01, tip:'Color strength.' },
-  bright: { t:'range', k:'bright', l:'Brightness', min:0.2, max:3, step:0.01, tip:'Overall brightness.' },
+  bright: { t:'range', k:'bright', l:'Scene brightness', min:0.2, max:3, step:0.01, tip:'Brightness of this scene. Bright, next to Vol, dims or lifts every visualizer at once.' },
   contrast:{ t:'range', k:'contrast', l:'Contrast', min:0.5, max:2, step:0.01, tip:'Contrast.' },
   chroma: { t:'range', k:'chroma', l:'Chromatic split', min:0, max:1.5, step:0.01, tip:'Red/blue fringes at the edges; beats widen them.' },
   vig:    { t:'range', k:'vig', l:'Vignette', min:0, max:1, step:0.01, tip:'Darkens the corners.' }
@@ -1046,9 +1072,10 @@ const ECHO = {
 };
 const ECHO_OPTS = [['zoomin','Tunnel (flows outward)'],['zoomout','Pull back (flows inward)'],['smear','Smear (stays put)'],['spin','Spin'],['swirl','Swirl'],['drift','Drift'],['pulse','Beat pump'],['mirror','Mirror'],['kaleido','Kaleidoscope']];
 const ECHO_KEYS = Object.keys(ECHO);
+const AUTO_OPTS = [['off','Off: stay on what I pick'],['15','Every 15 seconds'],['30','Every 30 seconds'],['60','Every minute'],['120','Every 2 minutes'],['beat','On strong beats']];
 
 const DEF = { v:4, engine:'hyper', preset:'', sens:1.2, rel:0.80, thr:1.35, vol:80, autoCycle:false, beatSwitch:false, cycle:20, blend:2.7, quality:1, motion:1, colorPulse:0.5, hyq:1,
-  motionSens:1, colorSens:1, trails:0, echoMode:'zoomin', echoHue:0, d3q:1, drvB:1, drvM:1, drvH:1, drvK:1, dyn:0.7, bright:1 };
+  motionSens:1, colorSens:1, trails:0, echoMode:'zoomin', echoHue:0, d3q:1, drvB:1, drvM:1, drvH:1, drvK:1, dyn:0.7, bright:1, react:1, auto:'off' };
 let S;
 function buildState(j){ let S;
   if (!j || (j.v !== 2 && j.v !== 3 && j.v !== 4)) j = {};
@@ -1070,6 +1097,14 @@ function buildState(j){ let S;
   S.motion = num(S.motion, 0, 3, 1); S.colorPulse = num(S.colorPulse, 0, 3, 0.5); S.motionSens = num(S.motionSens, 0.1, 10, 1); S.colorSens = num(S.colorSens, 0.1, 10, 1);
   S.bright = num(S.bright, 0.2, 1.5, 1); S.trails = num(S.trails, 0, 1, 0); S.echoHue = num(S.echoHue, 0, 1, 0); S.sens = num(S.sens, 0.1, 6, 1.2); if (!ECHO_KEYS.includes(S.echoMode)) S.echoMode = 'zoomin';
   S.drvB = num(S.drvB, 0, 3, 1); S.drvM = num(S.drvM, 0, 3, 1); S.drvH = num(S.drvH, 0, 3, 1); S.drvK = num(S.drvK, 0, 3, 1); S.dyn = num(S.dyn, 0, 1, 0.7);
+  // v15: Reaction is one master over both sensitivities. Older settings hand their overall level to it and keep their balance.
+  if (j.react === undefined){ const r = clamp(Math.sqrt(S.motionSens*S.colorSens), 0.1, 10);
+    if (Math.abs(r - 1) > 0.02){ S.react = +r.toFixed(3); S.motionSens = +clamp(S.motionSens/r, 0.1, 10).toFixed(3); S.colorSens = +clamp(S.colorSens/r, 0.1, 10).toFixed(3); } }
+  S.react = num(S.react, 0.1, 10, 1);
+  // v15: one Auto-change for every visualizer replaces MilkDrop's preset cycling
+  if (j.auto === undefined && j.autoCycle){ const c = +j.cycle || 20; S.auto = j.beatSwitch ? 'beat' : String([15, 30, 60, 120].reduce((a, b) => Math.abs(b - c) < Math.abs(a - c) ? b : a)); }
+  if (!AUTO_OPTS.some(o => o[0] === S.auto)) S.auto = 'off';
+  S.autoCycle = false; S.beatSwitch = false;
   return S;
 }
 { let j = null; try { const raw = localStorage.getItem('spectral-drift'); if (raw) j = JSON.parse(raw); } catch(e){} S = buildState(j); }
@@ -1261,7 +1296,7 @@ const lerp = (a, b, k) => a + (b-a)*k;
 /* Motion 0–1 eases toward the resting state; 1–3 is overdrive: the distance from rest is multiplied (quiet gets quieter, loud gets louder).
    Motion sensitivity is a gain on the music before any of that. */
 function applyMotion(){
-  const k = S.motion, g = S.motionSens;
+  const k = S.motion, g = S.motionSens*S.react;
   // Music drive: each band's slider scales what the engines see of that band; Hits scales the kick / snare / hat impulses.
   const f = (t, w) => { const v = Math.min(w > 1 ? 2.2 : 1.3, t*g*w); return k <= 1 ? lerp(REST, v, k) : clamp(REST + (v - REST)*k, 0, 2.2); };
   A.bass = f(A.tBass, S.drvB); A.mid = f(A.tMid, S.drvM); A.treb = f(A.tTreb, S.drvH); A.level = f(A.tLevel, (S.drvB + S.drvM + S.drvH)/3);
@@ -1439,8 +1474,8 @@ function analyseHost(now){
 /* Resting shapes for Motion 0: a slow breathing wave and a softly rolling spectrum, so scopes and bars glide instead of going flat. */
 function waveRest(u){ return 0.28*Math.sin(u*12.566 + tSec*0.6)*(0.65 + 0.35*Math.sin(tSec*0.23)); }
 function specRest(u){ return 0.2 + 0.14*(0.5 + 0.5*Math.sin(u*7.5 + tSec*0.5)); }
-function waveAt(u){ const k = S.motion; const v = clamp((wave ? (wave[Math.floor(clamp(u,0,0.9999)*wave.length)]-128)/128 : 0)*S.motionSens, -1.3, 1.3); return k < 1 ? lerp(waveRest(u), v, k) : k > 1 ? clamp(v*k, -1.6, 1.6) : v; }
-function specAt(u){ const k = S.motion; const v = Math.min(1.6, specBuf[Math.floor(clamp(u,0,0.9999)*75)]*S.motionSens*bandW(u)); if (k < 1) return lerp(specRest(u), v, k); if (k === 1) return v; const r = specRest(u); return clamp(r + (v - r)*k, 0, 1.6); }
+function waveAt(u){ const k = S.motion; const v = clamp((wave ? (wave[Math.floor(clamp(u,0,0.9999)*wave.length)]-128)/128 : 0)*S.motionSens*S.react, -1.3, 1.3); return k < 1 ? lerp(waveRest(u), v, k) : k > 1 ? clamp(v*k, -1.6, 1.6) : v; }
+function specAt(u){ const k = S.motion; const v = Math.min(1.6, specBuf[Math.floor(clamp(u,0,0.9999)*75)]*S.motionSens*S.react*bandW(u)); if (k < 1) return lerp(specRest(u), v, k); if (k === 1) return v; const r = specRest(u); return clamp(r + (v - r)*k, 0, 1.6); }
 function specTrue(u){ return specBuf[Math.floor(clamp(u,0,0.9999)*75)]; }
 function srcVal(name){ return name==='bass'?A.bass : name==='mid'?A.mid : name==='treble'?A.treb : name==='beat'?A.beat : name==='kick'?A.kick : name==='snare'?A.snare : name==='hats'?A.hat : A.level; }
 
@@ -1490,7 +1525,7 @@ function milkDrive(f){
   if (A.hat > 0.02){ f.warp *= 1 + A.hat*0.3; f.wave_a = Math.min(1, f.wave_a*(1 + A.hat*0.3)); }
 }
 function milkAudio(){
-  const k = S.motion, g = S.motionSens; let src = wave ? wave.subarray(wave.length-1024) : null;
+  const k = S.motion, g = S.motionSens*S.react; let src = wave ? wave.subarray(wave.length-1024) : null;
   if (src && (S.drvB !== 1 || S.drvM !== 1 || S.drvH !== 1)) src = milkBands(src);
   if (k === 1 && g === 1 && src) return src;
   let dg = 1;
@@ -1543,16 +1578,19 @@ function loadPreset(i, blend){
   S.preset = n; save(); lastSwitch = performance.now(); if (filtered.includes(n)) $('#presetSel').value = n; if (engine==='milk') flash(n); bindMilkEdits();
 }
 function stepPreset(d){
+  lastSwitch = performance.now();
   if (engine==='hyper'){ hyStep(d); return; }
   if (engine==='deep'){ deepStep(d); if (!D3.ok) $('#deepRemoteScene').textContent = D3_SCENES[S.deep.scene].label; return; }
-  if (MODE_UI[engine]){ modeStepGroup(engine, d); return; }
+  if (MODE_UI[engine] || engine==='reactor'){ modeStepGroup(engine, d); return; }
+  if (engine==='classic'){ classicMode(d); return; }
   if (engine==='avs'){ avsStep(d); return; }
   if (!names.length) return; const pool = filtered.length ? filtered : names; const n = pool[((pool.indexOf(names[cur]) + d) % pool.length + pool.length) % pool.length]; loadPreset(names.indexOf(n)); }
 function randPreset(){
+  lastSwitch = performance.now();
   if (engine==='hyper'){ hyRandomScene(); return; }
   if (engine==='deep'){ deepRandom(); if (!D3.ok) $('#deepRemoteScene').textContent = D3_SCENES[S.deep.scene].label; return; }
   if (engine==='laser'){ laserRandom(); return; }
-  if (MODE_UI[engine]){ modeMutate(engine); return; }
+  if (MODE_UI[engine] || engine==='classic' || engine==='reactor'){ randomizeAll(engine); return; }
   if (engine==='avs'){ avsRandomize(); return; }
   if (!names.length) return; const pool = filtered.length ? filtered : names; let n; do { n = pool[Math.floor(Math.random()*pool.length)]; } while (pool.length>1 && n===names[cur]); loadPreset(names.indexOf(n)); }
 let flashT = 0; function flash(txt){ if (WALL) return; const f = $('#flash'); f.textContent = txt; f.classList.add('show'); clearTimeout(flashT); flashT = setTimeout(()=>f.classList.remove('show'), 2600); }
@@ -1566,7 +1604,7 @@ function loadExtra(){
   document.head.appendChild(s);
 }
 function onBeat(){
-  if (engine==='milk' && S.beatSwitch && A.rawBass > 0.6 && performance.now() - lastSwitch > Math.max(4000, S.cycle*250)) randPreset();
+  if (S.auto === 'beat' && A.rawBass > 0.6 && performance.now() - lastSwitch > 10000) autoChange();
   if (engine==='reactor' && S.reactor.fx.burst.on && S.motion > 0.12 && S.drvB*S.drvK > 0.05) bursts.push({ r: ringR, a: Math.min(1, (0.7 + 0.3*AF.str[0])*S.motion*Math.min(1.2, S.drvB*S.drvK)) });
 }
 
@@ -2143,6 +2181,7 @@ function renderPanel(eng){
     inp.addEventListener('input', () => { st[c.k] = +inp.value; out.textContent = f(+inp.value); changed(eng, fxKey, c.k); });
     w.append(lab, out, inp); if (c.hint){ const h = el('span','why'); h.textContent = c.hint; w.appendChild(h); } host.appendChild(tipd(w, c));
   });
+  panelFold(host, eng, fxKey, schema, schema.desc ? 2 : 1);
   if (eng==='avs') compileFormulas(fxKey);
 }
 function changed(eng, fx, k){
@@ -2155,6 +2194,23 @@ function changed(eng, fx, k){
     if (k==='fx' || k==='fy' || k==='fd' || k==='fr') compileFormulas(fx);
     if (fx==='move') AV.lutKey = '';
   }
+}
+
+// v15: a panel with more than 7 dials shows 4 key dials first and an "All dials" button for the rest (remembered per visualizer).
+// Key dials: the shape-defining ones for each Hyperspace scene, otherwise the first four (the schemas list the main dials first).
+const KEY_DIALS = { hyper:{ nebula:['speed','twist','pal','trail'], hyper:['speed','stars','pal','trail'], galaxy:['speed','arms','pal','trail'], wormhole:['speed','depth','pal','trail'],
+  void:['speed','detail','pal','trail'], droste:['speed','nest','pal','trail'], kaleido:['speed','arms','detail','hue'], liquid:['inject','warp','fbrot','hue'], imgtunnel:['speed','depth','pal','trail'] } };
+const FOLD = { open:{}, KEY:'spectral-drift-fold' };
+try { FOLD.open = JSON.parse(localStorage.getItem(FOLD.KEY) || '{}') || {}; } catch(e){ FOLD.open = {}; }
+function panelFold(host, eng, fxKey, schema, off){
+  const ctl = schema.controls, kids = Array.prototype.slice.call(host.children, off, off + ctl.length), dial = c => c.t !== 'vars' && c.t !== 'head' && c.t !== 'imgbtn';
+  const dials = ctl.filter(dial); if (dials.length <= 7) return;
+  const keys = new Set((KEY_DIALS[eng] && KEY_DIALS[eng][fxKey]) || dials.slice(0, 4).map(c => c.k)), open = !!FOLD.open[eng];
+  if (!open) ctl.forEach((c, i) => { const n = kids[i]; if (n && (c.t === 'head' || c.t === 'vars' || (dial(c) && !keys.has(c.k)))) n.hidden = true; });
+  const more = dials.filter(c => !keys.has(c.k)).length, b = el('button', 'btn sm fold'); b.type = 'button';
+  b.textContent = open ? 'Fewer dials ▴' : 'All dials (' + more + ' more) ▾';
+  b.addEventListener('click', () => { FOLD.open[eng] = !open; try { localStorage.setItem(FOLD.KEY, JSON.stringify(FOLD.open)); } catch(e){} renderPanel(eng); });
+  host.appendChild(b);
 }
 
 /* ================= image source: Hyperspace image scenes + AVS Picture ================= */
@@ -2434,7 +2490,7 @@ function hyUploadImage(){
 }
 function hySetScene(key){
   if (!HY_SCENES[key]) return;
-  S.hyper.scene = key; save(); HY.frame = 0;
+  S.hyper.scene = key; save(); HY.frame = 0; lastSwitch = performance.now();
   const sel = $('#fxsel-hyper'); if (sel.value !== key) sel.value = key;
   renderPanel('hyper'); flash('Hyperspace · ' + HY_SCENES[key].label);
 }
@@ -2690,6 +2746,48 @@ function modeMutate(eng){
   });
   save(); renderPanel(eng); flash(UI[eng].effects[fx].label + ' · mutated');
 }
+// v15: Mutate nudges the dials on the page you're looking at; Random (and Auto-change) gives the whole visualizer a new mix,
+// pulled toward its defaults so repeated randoms don't drift off to the extremes. Settings that only cost speed, the formula
+// presets and MilkDrop's on/off switches are left alone.
+const MUT_SKIP = new Set(['count', 'points', 'detail', 'n', 'grid', 'oct']), AUTO_SKIP = { box:['notes'] };
+function mutatePage(eng, fx, amt, anchor){
+  const sch = UI[eng] && UI[eng].effects[fx], v = S[eng] && S[eng].fx[fx]; if (!sch || !v) return;
+  sch.controls.forEach(c => {
+    if (c.t === 'range' && !c.keep && !MUT_SKIP.has(c.k) && typeof v[c.k] === 'number'){
+      const span = c.max - c.min, steps = Math.round(span/c.step), a = anchor && typeof anchor[c.k] === 'number' ? anchor[c.k] : null;
+      const x = (a === null ? v[c.k] : a + (v[c.k] - a)*0.5) + (Math.random()*2 - 1)*amt*span;
+      v[c.k] = +(c.min + Math.round(clamp((x - c.min)/span, 0, 1)*steps)*c.step).toFixed(4);
+    } else if (c.t === 'select' && c.k !== 'quality' && c.k !== 'preset' && c.o !== TRI && Math.random() < amt) v[c.k] = c.o[Math.floor(Math.random()*c.o.length)][0];
+  });
+}
+function dialsChanged(eng, fx){
+  save();
+  if (eng === 'milked'){ S.milkEd[S.preset] = S.milked.fx; save(); const tg = $('#milkEdTag'); if (tg) tg.textContent = 'edited · saved with this preset'; }
+  if (eng === 'avs'){ if (S.avs.preset){ S.avs.preset = ''; $('#avsPreset').value = ''; } compileFormulas(); AV.lutKey = ''; }
+  refreshFxList(eng); renderPanel(eng);
+}
+function dialsMutate(eng){
+  if (eng === 'hyper') return hyMutate();
+  if (eng === 'deep') return deepMutate();
+  const fx = $('#fxsel-' + eng).value; mutatePage(eng, fx, 0.35, null); dialsChanged(eng, fx); flash(UI[eng].effects[fx].label + ' · mutated');
+}
+function dialsReset(eng){
+  if (MODE_DEF[eng]) return modeReset(eng);
+  const fx = $('#fxsel-' + eng).value;
+  if (eng === 'avs'){
+    if (S.avs.preset && AVS_PRESETS[S.avs.preset]){ avsApply(AVS_PRESETS[S.avs.preset], S.avs.preset); flash('AVS · ' + S.avs.preset + ' · reset'); return; }
+    Object.assign(S.avs.fx[fx], AVS_DEF[fx]); dialsChanged('avs', fx); flash(UI.avs.effects[fx].label + ' · reset'); return; }
+  const DF = eng === 'reactor' ? RE_DEF : CL_DEF; S[eng].fx[fx] = Object.assign({}, DF[fx]); save(); refreshFxList(eng); renderPanel(eng); flash(UI[eng].effects[fx].label + ' · reset');
+}
+function randomizeAll(eng){
+  const DF = eng === 'reactor' ? RE_DEF : eng === 'classic' ? CL_DEF : MODE_DEF[eng], skip = AUTO_SKIP[eng] || [];
+  for (const fx in UI[eng].effects) if (!skip.includes(fx)) mutatePage(eng, fx, 0.3, DF[fx]);
+  save(); refreshFxList(eng); renderPanel(eng); flash(engName(eng) + ' · new mix');
+}
+function classicMode(d){ const order = ['analyzer', 'scope', 'both'], c = S.classic.fx.main; c.mode = order[((order.indexOf(c.mode) + d) % 3 + 3) % 3]; save(); renderPanel('classic'); flash('Classic · ' + c.mode); }
+// Auto-change: a new scene or preset (a new mix where there are none) on a timer or on strong beats. Any change by hand restarts the clock.
+function autoChange(){ lastSwitch = performance.now(); if ((MODE_UI[engine] && engine !== 'laser') || engine === 'classic' || engine === 'reactor') randomizeAll(engine); else randPreset(); }
+function autoTick(now){ const sec = +S.auto; if (!sec || now - lastSwitch < sec*1000) return; autoChange(); }
 function modeReset(eng){ const fx = $('#fxsel-'+eng).value; S[eng].fx[fx] = Object.assign({}, MODE_DEF[eng][fx]); save(); renderPanel(eng); flash(UI[eng].effects[fx].label + ' · reset'); }
 
 /* ---------- WebGL2 helpers ---------- */
@@ -3659,7 +3757,7 @@ function deepSize(force){
 function deepResetCam(){ D3.yaw = 0.6; D3.pitch = 0.25; D3.vyaw = D3.vpitch = 0; D3.lyaw = D3.lpitch = 0; D3.zoom = 1; }
 function deepSetScene(key){
   if (!D3_SCENES[key]) return;
-  S.deep.scene = key; save(); deepResetCam();
+  S.deep.scene = key; save(); deepResetCam(); lastSwitch = performance.now();
   const sel = $('#fxsel-deep'); if (sel.value !== key) sel.value = key;
   renderPanel('deep'); flash('3D Worlds · ' + D3_SCENES[key].label);
 }
@@ -4190,7 +4288,7 @@ const FX_TIPS = {
 // Dial tips. Looked up as engine.effect.key, then engine.key, then key.
 const KEY_TIPS = {
   on:'Turns this effect on or off. ● in the Effect list means on.', hue:'Turns every color around the color wheel.', hueSpeed:'How fast the colors cycle by themselves.',
-  sat:'Color strength: 0 is grey, higher is more vivid.', bright:'Overall brightness.', contrast:'Contrast.', chroma:'Red/blue fringes toward the edges; beats widen them.',
+  sat:'Color strength: 0 is grey, higher is more vivid.', bright:'Brightness of this effect. Bright, next to Vol, dims or lifts every visualizer at once.', contrast:'Contrast.', chroma:'Red/blue fringes toward the edges; beats widen them.',
   vig:'Darkens the corners.', pal:'The color palette.', width:'Line thickness.', size:'Size.', speed:'Speed.', spin:'Spin. Negative turns the other way.',
   src:'Which part of the music drives it: level, bass, mid, treble, the beat, or the kick, snare and hat hits.', count:'How many.', bounce:'How much it jumps with the music.', alpha:'Opacity.',
   x:'Horizontal position.', y:'Vertical position.', mirror:'Mirror image.', cx:'Moves the centre left or right.', cy:'Moves the centre up or down.',
@@ -4247,21 +4345,21 @@ const KEY_TIPS = {
   'milked.filters.invert':'Inverts every color.', 'milked.filters.brighten':'MilkDrop brighten switch.', 'milked.filters.darken':'MilkDrop darken switch.', 'milked.filters.solarize':'MilkDrop solarize switch.', 'milked.filters.wrap':'Wrap the edges instead of fading them.'
 };
 const TIP_IDS = {
-  engineSel:'Pick the visualizer. Each one has its own effects and dials.', presetSel:'The MilkDrop preset. Prev / Next / Random below, or the N, P and R keys.',
+  engineSel:'Pick the visualizer. Each one has its own effects and dials.', presetSel:'The MilkDrop preset. Prev, Random and Next just below, or the N, P and R keys.',
   btnPlay:'Play or pause (Space). With live input on, this stops it.', seek:'Jump around in the track.', btnDemo:'Plays the built-in 124 BPM demo loop.',
   btnMic:'Visualize what the microphone hears.', btnSys:'Visualize whatever this computer is playing: Spotify, YouTube, games.', btnDevice:'Visualize what this device is playing.', vol:'Playback volume. Doesn’t change how strongly the visuals react.',
   motion:'How hard shapes react to the music. 0 = trance (a steady drift), 100% = normal, up to 300% = overdrive.',
-  motionSens:'Gain on the music before it moves the shapes. Down calms a loud track, up wakes quiet music. 1× = neutral.',
+  motionSens:'Fine-tunes how strongly the music moves the shapes, on top of Reaction. 1× = neutral.',
   colorPulse:'How much the music swells the saturation and brightness of the whole picture, whatever Motion is set to. Above 150% the beats also shove the hue.',
-  colorSens:'Gain on the music that drives Color pulse. 1× = neutral.',
+  colorSens:'Fine-tunes how strongly the music drives Color pulse, on top of Reaction. 1× = neutral.',
   trails:'Psychedelic echo: every frame leaves a fading copy of itself behind. 0 = off.',
   echoMode:'How the echoes move: stream outward like a tunnel, pull inward, spin, swirl, drift, pump with the beat, mirror or kaleidoscope.',
   echoHue:'Shifts the color of every echo, so the trails turn into rainbows.',
-  sens:'Gain on every band before smoothing. Affects motion, colors, meters and beat detection. Turn up for quiet sources like a mic.',
+  sens:'Input level: gain on the sound before it is analysed, for quiet sources like a mic. It affects motion, colors, meters and beat detection. For how strongly the picture reacts, use Reaction under Feel.',
   rel:'How fast levels fall after a hit. Higher = smoother and lazier.', thr:'How sharply the bass must jump, compared with its recent average, to count as a kick (the beat). Lower = more beats.',
   presetSearch:'Type to filter the preset list.', btnPrev:'Previous preset (P).', btnNext:'Next preset (N).', btnRand:'Random preset (R).',
   autoCycle:'Switch to a random preset every few seconds.', cycle:'Seconds between automatic switches.', beatSwitch:'Switch on a strong beat instead of on a timer.', blend:'Crossfade time when presets change.',
-  btnExtra:'Downloads about 100 more MilkDrop presets.', quality:'MilkDrop render resolution. Lower it if the picture stutters.', btnMilkReset:'Forget your edits for this preset.',
+  btnExtra:'Downloads 144 more MilkDrop presets.', quality:'MilkDrop render resolution. Lower it if the picture stutters.', btnMilkReset:'Forget your edits for this preset.',
   hyq:'Hyperspace internal resolution. Lower it if the picture stutters.', btnHyPrev:'Previous scene (P).', btnHyNext:'Next scene (N).', btnHyRand:'Random scene (R).', btnHyMutate:'Nudges every dial of this scene at random.', btnHyReset:'Back to this scene’s defaults.',
   d3q:'3D Worlds resolution. Fast renders fewer pixels, Sharp renders all of them. All settings lower the resolution on their own when the graphics card can’t keep up.',
   btnD3Prev:'Previous scene (P).', btnD3Next:'Next scene (N).', btnD3Rand:'Random scene (R).', btnD3Mutate:'Nudges every dial of this scene at random.', btnD3Reset:'Back to this scene’s defaults, camera included.',
@@ -4277,7 +4375,17 @@ const TIP_IDS = {
   bright:'Overall brightness of every visualizer, 20 % to 150 %. It only dims or brightens the picture; how much it reacts to the music stays the same. Double-click the word Bright for 100 %.',
   btnCloudIn:'Signs in with your Google account. Your saved looks are then kept in your account and show up on every device where you sign in. Looks already on this device are added too.',
   btnCloudOut:'Stops syncing on this device. Your looks stay here, and the copy in your account stays too.',
-  btnCloudDel:'Deletes your account and every look stored in it. The looks on this device stay. Press twice.'
+  btnCloudDel:'Deletes your account and every look stored in it. The looks on this device stay. Press twice.',
+  react:'How strongly the music drives the picture: motion and color together. Down calms a loud track, up wakes quiet music; 100% is normal. Motion and Color pulse below set how much each one shows.',
+  btnStepPrev:'Previous scene or preset (P). On visualizers without scenes: the previous page of dials.',
+  btnStepNext:'Next scene or preset (N). On visualizers without scenes: the next page of dials.',
+  btnStepRand:'Something new (R): a random scene or preset. On visualizers without scenes, a new mix of every dial.',
+  btnSource:'What to visualize: the demo loop, a track from this device, the microphone, or what this computer or phone is playing.',
+  btnSaveLook:'Saves this look with an automatic name (S). Rename it later under Saved looks.',
+  musicFocus:'Which part of the music leads. Balanced; Bass: kick and bass drive the picture; Melody: vocals and synths lead and the drums calm down; Hits: every kick, snare and hat punches harder. Fine-tune it under More, Music drive.',
+  autoSel:'Changes the scene or preset by itself, on a timer or on strong beats (on visualizers without scenes, a new mix of dials). Off keeps whatever you pick.',
+  rqSel:'Internal resolution of the visualizers that draw on the graphics card. Fast if the picture stutters, Sharp on a strong PC. Auto also lowers it by itself when needed.',
+  btnMilkMutate:'Nudges the edit dials on this page at random.'
 };
 function ctlTip(eng, fx, c){ return c.tip || c.hint || KEY_TIPS[eng + '.' + fx + '.' + c.k] || KEY_TIPS[eng + '.' + c.k] || KEY_TIPS[c.k] || ''; }
 function fxTip(eng, fx){ const e = UI[eng] && UI[eng].effects && UI[eng].effects[fx]; return (e && e.desc) || (FX_TIPS[eng] && FX_TIPS[eng][fx]) || ''; }
@@ -4286,13 +4394,14 @@ function tipsInit(){
   document.documentElement.classList.add('tips');
   for (const id in TIP_IDS){ const e = document.getElementById(id); if (!e) continue;
     const w = e.closest('.ctl, .lab-sel, .chk') || e; w.dataset.tip = TIP_IDS[id]; e.removeAttribute('title'); }
+  document.querySelectorAll('[data-mode-act], #btnHyMutate, #btnD3Mutate, #btnHyReset, #btnD3Reset, #btnMilkReset').forEach(b => { if (!b.dataset.tip) b.dataset.tip = /reset/i.test(b.dataset.modeAct || b.id) ? 'Puts these dials back to their defaults.' : 'Nudges every dial on this page at random.'; });
   const lt = document.querySelector('label[for=fileIn]'); if (lt) lt.dataset.tip = 'Load an audio file from this computer and visualize it.';
   { const w = $('#presetSel').closest('.lab-sel'); if (w) w.dataset.tipFx = '1'; }
   const box = el('div', 'tipbox'); box.setAttribute('role', 'tooltip'); document.body.appendChild(box);
   let cur = null, t = 0;
   const hide = () => { clearTimeout(t); cur = null; box.classList.remove('show'); };
   const textFor = e => {
-    if (e.dataset.tipFx){ if (engine === 'milk') return TIP_IDS.presetSel; const s = document.getElementById('fxsel-' + engine); return s ? fxTip(engine, s.value) : ''; }
+    if (e.dataset.tipFx){ if (engine === 'milk') return TIP_IDS.presetSel; if (engine === 'avs') return TIP_IDS.avsPreset; const s = document.getElementById('fxsel-' + engine); return s ? fxTip(engine, s.value) : ''; }
     if (e.querySelector && e.querySelector('#engineSel')) return TIP_IDS.engineSel + ' Now: ' + (ENGINE_TIPS[engine] || '');
     return e.dataset.tip || '';
   };
@@ -4334,12 +4443,13 @@ function setEngine(choice){
     if (!WALL && (e !== 'deep' || PC_CLASS)){ const o = $('#engineSel').querySelector('[value=' + e + ']'); if (o){ o.disabled = true; o.textContent += ' (unavailable)'; } toast(MODE_WHY[e]() + ' — showing Hyperspace instead.'); }
     e = initHyper() ? 'hyper' : 'avs';
   }
-  engine = e;
+  engine = e; lastSwitch = performance.now();
   const deepRemote = e==='deep' && !D3.ok;
   ENGINES.forEach(k => { $('#'+k).hidden = k!==e || (k==='deep' && deepRemote); $('#sec-'+k).hidden = k!==e; const s = k==='milk' ? $('#presetSel') : $('#fxsel-'+k); s.hidden = k!==e; });
   $('#deepRemote').hidden = !deepRemote; if (deepRemote){ $('#deepRemoteScene').textContent = D3_SCENES[S.deep.scene].label; $('#hint').classList.add('gone'); }
   document.body.classList.toggle('interactive', INTERACTIVE.has(e));
-  $('#engineSel').value = e; $('#fxLabel').textContent = e==='milk' ? 'Preset' : e==='reactor' ? 'Component' : (e==='hyper' || e==='deep') ? 'Scene' : MODE_UI[e] ? 'Dials' : 'Effect';
+  $('#avsPreset').hidden = e !== 'avs';
+  $('#engineSel').value = e; $('#fxLabel').textContent = (e==='milk' || e==='avs') ? 'Preset' : e==='reactor' ? 'Component' : (e==='hyper' || e==='deep') ? 'Scene' : MODE_UI[e] ? 'Dials' : 'Effect';
   if (e==='deep' && D3.ok) deepSize(true);
   if (e==='reactor'){ rctx.setTransform(1,0,0,1,0,0); rctx.globalCompositeOperation='source-over'; rctx.globalAlpha=1; rctx.fillStyle='#07080c'; rctx.fillRect(0,0,rc.width,rc.height); }
   if (e==='milk') resize();
@@ -4355,7 +4465,7 @@ let uiTick = 0, seeking = false;
 function drawMeters(){
   const tick = (uiTick++ & 7) === 0;
   if (tick && T.buffer && !live && !hostMode && !seeking){ const p = pos(); $('#tCur').textContent = fmt(p); $('#seek').value = Math.round(p/T.dur*1000); }
-  if (WALL || !$('#secReact').open) return;
+  if (WALL || !$('#secMore').open) return;
   M.b.style.transform = 'scaleX(' + A.tBass.toFixed(3) + ')'; M.m.style.transform = 'scaleX(' + A.tMid.toFixed(3) + ')';
   M.t.style.transform = 'scaleX(' + A.tTreb.toFixed(3) + ')'; M.l.style.transform = 'scaleX(' + A.tLevel.toFixed(3) + ')';
   M.led.classList.toggle('on', A.tBeat > 0.35);
@@ -4375,7 +4485,7 @@ function frame(now, external){
   const dt = clamp((now - last)/16.667, 0.25, 3); last = now;
   if (document.hidden && !external) return;
   analyse(now);
-  if (engine==='milk'){ renderMilk(); if (S.autoCycle && !S.beatSwitch && names.length && now - lastSwitch > S.cycle*1000) randPreset(); }
+  if (engine==='milk') renderMilk();
   else if (engine==='hyper') renderHyper(now, dt);
   else if (engine==='avs') renderAVS(now, dt);
   else if (engine==='classic') renderClassic(now, dt);
@@ -4384,14 +4494,14 @@ function frame(now, external){
   postFrame(dt);
   if (LOOKS.want) LOOKS.want();
   colorPulse();
-  drawMeters(); musicMeters(now);
+  drawMeters(); musicMeters(now); autoTick(now);
 }
 /* Color pulse: the music swells saturation and brightness of the whole picture, independent of Motion. A compositor-side filter, so it costs nothing per pixel. */
 let cpLvl = 0, cpLast = '', cpEl = null;
 function colorPulse(){
   const p = S.colorPulse, cv = PF.on ? PF.cv : $('#'+engine); let f = '';
   if (p > 0){
-    const target = Math.min(2.5, (A.tLevel*0.55 + A.tBass*0.45 + A.tBeat*0.35)*S.colorSens);
+    const target = Math.min(2.5, (A.tLevel*0.55 + A.tBass*0.45 + A.tBeat*0.35)*S.colorSens*S.react);
     cpLvl = target > cpLvl ? cpLvl + (target-cpLvl)*0.5 : cpLvl*0.9 + target*0.1;
     const q = cpLvl*p;
     f = 'saturate(' + (1 + Math.min(3, q*0.9)).toFixed(2) + ') brightness(' + (1 + Math.min(1.2, q*0.45)).toFixed(2) + ') contrast(' + (1 + Math.min(0.6, q*0.15)).toFixed(2) + ')';
@@ -4414,9 +4524,7 @@ function bindRange(id, key, out, fmtv, after){
 bindRange('sens','sens','oSens', v => v.toFixed(2)+'×');
 bindRange('rel','rel','oRel', v => v.toFixed(2));
 bindRange('thr','thr','oThr', v => v.toFixed(2)+'×');
-bindRange('cycle','cycle','oCycle', v => v+' s');
 bindRange('blend','blend','oBlend', v => v.toFixed(1)+' s');
-bindRange('quality','quality','oQuality', v => ['low','auto','device'][v|0], resize);
 bindRange('vol','vol','', v => '', () => { if (volNode) volNode.gain.value = S.vol/100; });
 { const bi = $('#bright'), bo = $('#oBright'), sync = () => { bi.value = Math.round(S.bright*100); bo.textContent = Math.round(S.bright*100) + '%'; };
   sync(); BOUND.push(sync);
@@ -4429,6 +4537,7 @@ bindRange('vol','vol','', v => '', () => { if (volNode) volNode.gain.value = S.v
   const showTag = () => { const v = S.motion; let t = v > 1.04 ? 'overdrive' : v >= 0.96 ? 'full motion' : v <= 0.01 ? 'trance' : v < 0.4 ? 'calm' : 'eased'; if (S.trails > 0.001) t += ' · echo'; tag.textContent = t; };
   const echoUI = () => { const off = S.trails <= 0.001; $('#echoMode').disabled = off; $('#echoHue').disabled = off; };
   const FEEL = [
+    ['react',      () => UNLOG(S.react),                v => { S.react = LOG(v); },                  () => Math.round(S.react*100) + '%'],
     ['motion',     () => Math.round(S.motion*100),     v => { S.motion = clamp(v/100, 0, 3); },     () => Math.round(S.motion*100) + '%'],
     ['motionSens', () => UNLOG(S.motionSens),           v => { S.motionSens = LOG(v); },             () => fx(S.motionSens)],
     ['colorPulse', () => Math.round(S.colorPulse*100), v => { S.colorPulse = clamp(v/100, 0, 3); }, () => Math.round(S.colorPulse*100) + '%'],
@@ -4446,12 +4555,18 @@ bindRange('vol','vol','', v => '', () => { if (volNode) volNode.gain.value = S.v
   em.value = S.echoMode; em.addEventListener('change', () => { S.echoMode = em.value; PF.frame = 0; save(); });
   BOUND.push(() => { em.value = S.echoMode; showTag(); echoUI(); postToggle(); });
   showTag(); echoUI(); }
+/* Music focus (v15): one tap sets the four drives for a common balance; the drive sliders under More fine-tune it. */
+const FOCUS = { balanced:[1, 1, 1, 1], bass:[1.6, 0.7, 0.6, 1.3], melody:[0.6, 1.6, 1.2, 0.6], hits:[1.1, 0.9, 1, 2] };
+let musicSync = () => {};
+function focusUI(){ const v = [S.drvB, S.drvM, S.drvH, S.drvK]; let on = '';
+  for (const k in FOCUS) if (FOCUS[k].every((x, i) => Math.abs(x - v[i]) < 0.015)) on = k;
+  document.querySelectorAll('#musicFocus .chip').forEach(b => { const a = b.dataset.focus === on; b.classList.toggle('on', a); b.setAttribute('aria-checked', a ? 'true' : 'false'); }); }
 /* Music drive: Bass / Mid / High drive and Hits 0–300 %, Dynamics 0–100 %. Double-click a label to put that dial back. */
 { const tag = $('#musicTag');
   const showTag = () => { const w = [S.drvB, S.drvM, S.drvH], mx = Math.max(...w), mn = Math.min(...w), names = ['bass', 'mid', 'high'];
     let t = mx - mn < 0.05 ? (mx < 0.05 ? 'music off' : mx > 1.05 ? 'all bands up' : mx < 0.95 ? 'all bands down' : 'balanced') : names[w.indexOf(mx)] + ' led';
     if (S.drvK < 0.05) t += ' · no hits'; else if (S.drvK > 1.5) t += ' · hard hits';
-    t += S.dyn > 0.85 ? ' · true loudness' : S.dyn < 0.2 ? ' · auto-level' : ''; tag.textContent = t; };
+    t += S.dyn > 0.85 ? ' · true loudness' : S.dyn < 0.2 ? ' · auto-level' : ''; tag.textContent = t; focusUI(); };
   const pct = v => Math.round(v*100) + '%';
   const MUSIC = [
     ['drvB', () => Math.round(S.drvB*100), v => { S.drvB = clamp(v/100, 0, 3); }, () => pct(S.drvB)],
@@ -4466,11 +4581,14 @@ bindRange('vol','vol','', v => '', () => { if (volNode) volNode.gain.value = S.v
     inp.addEventListener('input', () => { set(+inp.value); o.textContent = show(); showTag(); save(); });
     inp.closest('.ctl').querySelector('label').addEventListener('dblclick', () => { S[id] = DEF[id]; sync(); showTag(); save(); });
   });
-  BOUND.push(showTag); showTag(); }
+  BOUND.push(showTag); showTag();
+  musicSync = () => { MUSIC.forEach(([id, get, set, show]) => { $('#'+id).value = get(); $('#o' + id[0].toUpperCase() + id.slice(1)).textContent = show(); }); showTag(); }; }
+document.querySelectorAll('#musicFocus .chip').forEach(b => b.addEventListener('click', () => {
+  const f = FOCUS[b.dataset.focus]; if (!f) return; S.drvB = f[0]; S.drvM = f[1]; S.drvH = f[2]; S.drvK = f[3]; musicSync(); save(); flash('Music focus · ' + b.textContent); }));
 /* Live band meters in the Music drive section: level bar per band, and a light that flashes on each kick / snare / hat. */
-const MDRV = { b:[$('#mbB'), $('#mbM'), $('#mbH')], l:[$('#hbB'), $('#hbM'), $('#hbH')], c:[$('#cbB'), $('#cbM'), $('#cbH')], sec:$('#sec-music'), n:0, rate:[0, 0, 0], last:[0, 0, 0], t0:0 };
+const MDRV = { b:[$('#mbB'), $('#mbM'), $('#mbH')], l:[$('#hbB'), $('#hbM'), $('#hbH')], c:[$('#cbB'), $('#cbM'), $('#cbH')], sec:$('#secMore'), n:0, rate:[0, 0, 0], last:[0, 0, 0], t0:0 };
 function musicMeters(now){
-  if (WALL || !MDRV.sec || MDRV.sec.hidden || document.body.classList.contains('ui-hidden')) return;
+  if (WALL || !MDRV.sec || !MDRV.sec.open || document.body.classList.contains('ui-hidden')) return;
   const e = [A.tBass*S.drvB, A.tMid*S.drvM, A.tTreb*S.drvH];
   for (let b=0;b<3;b++){ MDRV.b[b].style.transform = 'scaleX(' + Math.min(1, e[b]).toFixed(3) + ')'; MDRV.l[b].classList.toggle('on', AF.hit[b]*S.drvK > 0.42 && [S.drvB, S.drvM, S.drvH][b] > 0.02); }
   if (now - MDRV.t0 > 1000){ const dt = (now - MDRV.t0)/1000; MDRV.t0 = now;
@@ -4823,16 +4941,25 @@ function cloudBoot(){
       io.observe($('#cloudRow')); } catch(e){}
   }
 }
-const cycleUI = () => { const on = S.autoCycle; $('#cycle').disabled = !on; $('#beatSwitch').disabled = !on; };
-$('#autoCycle').checked = S.autoCycle; $('#autoCycle').addEventListener('change', e => { S.autoCycle = e.target.checked; lastSwitch = performance.now(); cycleUI(); save(); });
-$('#beatSwitch').checked = S.beatSwitch; $('#beatSwitch').addEventListener('change', e => { S.beatSwitch = e.target.checked; save(); });
-BOUND.push(() => { $('#autoCycle').checked = S.autoCycle; $('#beatSwitch').checked = S.beatSwitch; cycleUI(); });
-cycleUI();
+/* v15: Auto-change and Render quality, one setting each for every visualizer (under More) */
+{ const sel = $('#autoSel'); AUTO_OPTS.forEach(([v, l]) => { const o = el('option'); o.value = v; o.textContent = l; sel.appendChild(o); });
+  const sync = () => { sel.value = S.auto; }; sync(); BOUND.push(sync);
+  sel.addEventListener('change', () => { S.auto = sel.value; lastSwitch = performance.now(); save(); flash(S.auto === 'off' ? 'Auto-change off' : 'Auto-change · ' + sel.options[sel.selectedIndex].text.toLowerCase()); }); }
+{ const sel = $('#rqSel'), sync = () => { sel.value = String(clamp(S.hyq|0, 0, 2)); }; sync(); BOUND.push(sync);
+  sel.addEventListener('change', () => { const q = clamp(+sel.value|0, 0, 2); S.hyq = S.d3q = S.quality = q; save();
+    resize(); HY.W = 0; hySize(); D3.scale = [0.5, 0.8, 1][q]; D3.lastAdj = performance.now(); if (D3.ok) deepSize(true); flash('Render quality · ' + sel.options[sel.selectedIndex].text); }); }
+/* v15: Source menu (demo, a file, the mic, what the computer or phone is playing) */
+{ const btn = $('#btnSource'), menu = $('#srcMenu'), close = () => { menu.hidden = true; btn.setAttribute('aria-expanded', 'false'); };
+  btn.addEventListener('click', e => { e.stopPropagation(); const open = menu.hidden; menu.hidden = !open; btn.setAttribute('aria-expanded', open ? 'true' : 'false'); });
+  menu.addEventListener('click', e => { if (e.target.closest('.btn')) setTimeout(close, 0); });
+  document.addEventListener('click', e => { if (!menu.hidden && !e.target.closest('.src')) close(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !menu.hidden) close(); }); }
 $('#presetSearch').addEventListener('input', applyFilter);
 $('#presetSel').addEventListener('change', e => loadPreset(names.indexOf(e.target.value)));
-$('#btnPrev').addEventListener('click', () => stepPreset(-1));
-$('#btnNext').addEventListener('click', () => stepPreset(1));
-$('#btnRand').addEventListener('click', randPreset);
+$('#btnStepPrev').addEventListener('click', () => stepPreset(-1));
+$('#btnStepNext').addEventListener('click', () => stepPreset(1));
+$('#btnStepRand').addEventListener('click', randPreset);
+$('#btnSaveLook').addEventListener('click', () => { if (!WALL) lookSave(''); });
 $('#btnExtra').addEventListener('click', loadExtra);
 $('#engineSel').addEventListener('change', e => { ensureCtx(); setEngine(e.target.value); });
 $('#btnExpand').addEventListener('click', () => { const d = $('#dock'); d.classList.toggle('collapsed'); const open = !d.classList.contains('collapsed'); $('#btnExpand').setAttribute('aria-expanded', open); $('#btnExpand').textContent = open ? 'Dials ▴' : 'Dials ▾'; resize(); });
@@ -4846,29 +4973,25 @@ $('#stage').addEventListener('click', e => {
 });
 $('#btnFull').addEventListener('click', e => { e.stopPropagation(); const st = $('#stage'); if (document.fullscreenElement) document.exitFullscreen().catch(()=>{}); else if (st.requestFullscreen) st.requestFullscreen().catch(()=>toast('Fullscreen is not available here')); else toast('Fullscreen is not available here'); });
 document.addEventListener('fullscreenchange', resize);
-$('#secReact').addEventListener('toggle', resize);
+$('#secMore').addEventListener('toggle', resize);
 { const sel = $('#avsPreset'); const o0 = el('option'); o0.value = ''; o0.textContent = '— custom —'; sel.appendChild(o0);
   Object.keys(AVS_PRESETS).forEach(k => { const o = el('option'); o.value = k; o.textContent = k; sel.appendChild(o); }); sel.value = S.avs.preset;
-  sel.addEventListener('change', e => { const k = e.target.value; if (!AVS_PRESETS[k]) return; avsApply(AVS_PRESETS[k], k); flash('AVS · ' + k); }); }
-$('#btnAvsRand').addEventListener('click', avsRandomize);
+  sel.addEventListener('change', e => { const k = e.target.value; if (!AVS_PRESETS[k]) return; lastSwitch = performance.now(); avsApply(AVS_PRESETS[k], k); flash('AVS · ' + k); }); }
 $('#btnAvsClear').addEventListener('click', avsClear);
 ENGINES.filter(k => k!=='milk' && k!=='hyper' && k!=='deep').forEach(k => { refreshFxList(k); $('#fxsel-'+k).addEventListener('change', () => renderPanel(k)); renderPanel(k); });
 refreshFxList('hyper'); $('#fxsel-hyper').value = S.hyper.scene; renderPanel('hyper');
 $('#fxsel-hyper').addEventListener('change', e => hySetScene(e.target.value));
 refreshFxList('deep'); $('#fxsel-deep').value = S.deep.scene; renderPanel('deep');
 $('#fxsel-deep').addEventListener('change', e => { deepSetScene(e.target.value); if (!D3.ok && engine === 'deep') $('#deepRemoteScene').textContent = D3_SCENES[S.deep.scene].label; });
-$('#btnD3Prev').addEventListener('click', () => deepStep(-1)); $('#btnD3Next').addEventListener('click', () => deepStep(1)); $('#btnD3Rand').addEventListener('click', deepRandom);
 $('#btnD3Mutate').addEventListener('click', deepMutate); $('#btnD3Reset').addEventListener('click', deepReset);
-bindRange('d3q', 'd3q', 'oD3q', v => ['fast','auto','sharp'][v|0], () => { D3.scale = [0.5, 0.8, 1][S.d3q|0] || 0.8; D3.lastAdj = performance.now(); deepSize(true); });
 document.querySelectorAll('[data-mode-act]').forEach(b => b.addEventListener('click', () => {
   const eng = b.closest('section').id.slice(4);
-  if (b.dataset.modeAct === 'reset') modeReset(eng); else if (eng === 'laser') laserRandom(); else modeMutate(eng); }));
+  if (b.dataset.modeAct === 'reset') dialsReset(eng); else dialsMutate(eng); }));
 refreshFxList('milked'); renderPanel('milked');
 $('#fxsel-milked').addEventListener('change', () => renderPanel('milked'));
 $('#btnMilkReset').addEventListener('click', resetMilkEdits);
-$('#btnHyPrev').addEventListener('click', () => hyStep(-1)); $('#btnHyNext').addEventListener('click', () => hyStep(1));
-$('#btnHyRand').addEventListener('click', hyRandomScene); $('#btnHyMutate').addEventListener('click', hyMutate); $('#btnHyReset').addEventListener('click', hyReset);
-bindRange('hyq', 'hyq', 'oHyq', v => ['low','auto','high'][v|0], () => { HY.W = 0; hySize(); });
+$('#btnMilkMutate').addEventListener('click', () => dialsMutate('milked'));
+$('#btnHyMutate').addEventListener('click', hyMutate); $('#btnHyReset').addEventListener('click', hyReset);
 $('#imgIn').addEventListener('change', e => { const f = e.target.files && e.target.files[0]; if (!f) return; loadImageURL(URL.createObjectURL(f), true); e.target.value = ''; });
 try { const d = localStorage.getItem('spectral-drift-img'); if (d) loadImageURL(d, false); } catch(e){}
 compileFormulas();
@@ -4907,7 +5030,7 @@ document.addEventListener('keydown', e => {
 // Outgoing (phone): every saved change is sent, debounced, as the whole state; the host forwards it to a linked PC and to Cast.
 // Incoming (PC app, Cast receiver): applyState() rebuilds the state and refreshes every panel and engine without a reload.
 var remoteT = 0, remoteApplying = false;
-const REMOTE_LOCAL = ['vol', 'quality', 'hyq', 'd3q'];              // per-device: volume and render quality stay where they are
+const REMOTE_LOCAL = ['vol', 'quality', 'hyq', 'd3q', 'auto'];      // per-device: volume, render quality and auto-change stay where they are
 function stateJSON(){ return JSON.stringify(S, (k, v) => k === 'milked' ? undefined : v); }
 function remoteOut(json){ if (typeof android !== 'undefined' && android && typeof android.remoteState === 'function') try { android.remoteState(json); } catch(e){} }
 function remoteQueue(){ if (remoteApplying || WALL) return; clearTimeout(remoteT); remoteT = setTimeout(() => remoteOut(stateJSON()), 120); }

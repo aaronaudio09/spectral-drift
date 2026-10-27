@@ -14,6 +14,10 @@ Twelve visualizers: Hyperspace (endless zooms through space or your own picture)
 
 Bass, mid and high each drive the picture their own way, kicks, snares and hats hit harder, and Dynamics decides how calm quiet music looks. **Bright** dims or lifts every visualizer at once without changing how it reacts. Save any picture you like as a named look and bring it back later.
 
+## Controls
+
+The controls you reach for most are always in view: the visualizer and its scene (with Prev, Random and Next), Play with one **Source** menu (demo loop, a track, the microphone, or what your computer is playing), **Bright**, **Vol** and **Save**. Below them, **Feel** has four sliders (Reaction, Motion, Color pulse, Trails) and a **Music focus** row (Balanced, Bass, Melody, Hits), then the visualizer's own dials, key dials first with the rest one tap away. Everything else waits under **More**: the per-band drives and Dynamics, fine tuning, beat detection, **Auto-change** (off unless you turn it on) and **Render quality**.
+
 ## Your looks on every device
 
 Saved looks stay on the device you made them on. To have them everywhere, press **Sign in with Google** under Saved looks (in the browser version for now) and they follow you to every browser where you sign in. Signing in is optional. It stores your Google sign-in details (account ID, name, email address and profile picture link) and your saved looks in Google Firebase, used for nothing but syncing them. **Sign out** stops syncing; **Delete cloud copy** erases your looks and your sign-in record from it.
