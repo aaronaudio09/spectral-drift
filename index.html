@@ -74,6 +74,9 @@ input[type=range]:disabled{opacity:.4}
 .src-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .vol{display:flex;align-items:center;gap:6px;margin-left:auto;font-size:11px;color:var(--muted)}
 .vol input{width:76px;flex:none}
+.vol.bright + .vol{margin-left:0}
+.vol span{user-select:none;-webkit-user-select:none}
+.vol output{min-width:32px;font-family:var(--font-data);font-size:10px;text-align:right}
 .sel-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .sel-row .lab-sel{min-width:0}
 
@@ -204,6 +207,7 @@ body.ui-hidden.interactive .showbtn{display:grid}
     <canvas id="mandala" hidden></canvas>
     <canvas id="laser" hidden></canvas>
     <canvas id="weave" hidden></canvas>
+    <canvas id="box" hidden></canvas>
     <canvas id="post" hidden></canvas>
     <div id="deepRemote" hidden><div><b>3D Worlds is playing on your PC</b><span id="deepRemoteScene"></span>Pick scenes and turn the dials here; the PC follows.</div></div>
     <div class="flash" id="flash"></div>
@@ -236,6 +240,7 @@ body.ui-hidden.interactive .showbtn{display:grid}
           <select id="engineSel" class="big" aria-label="Visualizer">
             <option value="hyper">Hyperspace</option>
             <option value="weave">Sound Weaver</option>
+            <option value="box">Music Box</option>
             <option value="deep">3D Worlds (PC)</option>
             <option value="ink">Ink (fluid)</option>
             <option value="swarm">Swarm</option>
@@ -256,6 +261,7 @@ body.ui-hidden.interactive .showbtn{display:grid}
           <select id="fxsel-mandala" aria-label="Mandala dials" hidden></select>
           <select id="fxsel-laser" aria-label="Laser dials" hidden></select>
           <select id="fxsel-weave" aria-label="Sound Weaver dials" hidden></select>
+          <select id="fxsel-box" aria-label="Music Box dials" hidden></select>
           <select id="fxsel-avs" aria-label="AVS effect" hidden></select>
           <select id="fxsel-classic" aria-label="Classic part" hidden></select>
           <select id="fxsel-reactor" aria-label="Reactor component" hidden></select>
@@ -285,6 +291,7 @@ body.ui-hidden.interactive .showbtn{display:grid}
         <button class="btn sm" id="btnDevice" title="What this device is playing" hidden>Device audio</button>
         <button class="btn sm" id="btnMic" title="Listen through the microphone">Mic</button>
         <button class="btn sm" id="btnSys" title="Capture what the computer is playing (desktop Chrome/Edge)">System</button>
+        <div class="vol bright"><span>Bright</span><input type="range" id="bright" min="20" max="150" step="1" value="100" aria-label="Brightness"><output id="oBright">100%</output></div>
         <div class="vol"><span>Vol</span><input type="range" id="vol" min="0" max="100" value="80" aria-label="Volume"></div>
       </div>
     </div>
@@ -410,6 +417,14 @@ body.ui-hidden.interactive .showbtn{display:grid}
           <button class="btn sm" data-mode-act="reset">Reset these dials</button>
         </div>
       </section>
+      <section id="sec-box" hidden>
+        <h2>Music Box <small>every note draws its own line</small></h2>
+        <div class="panel" id="panel-box"></div>
+        <div class="row">
+          <button class="btn sm" data-mode-act="mutate">Mutate dials</button>
+          <button class="btn sm" data-mode-act="reset">Reset these dials</button>
+        </div>
+      </section>
       <section id="sec-deep" hidden>
         <h2>3D Worlds <small>drag to look · scroll to zoom</small></h2>
         <div class="row">
@@ -483,7 +498,7 @@ body.ui-hidden.interactive .showbtn{display:grid}
           <input type="range" id="blend" min="0" max="6" step="0.1" value="2.7">
           <span class="why">Crossfade when you change presets by hand.</span>
         </div>
-        <div class="row"><button class="btn sm" id="btnExtra">Load extra pack (+100)</button></div>
+        <div class="row"><button class="btn sm" id="btnExtra">Load extra pack (+144)</button></div>
         <div class="ctl">
           <label for="quality">Render quality</label><output id="oQuality">auto</output>
           <input type="range" id="quality" min="0" max="2" step="1" value="1">
@@ -560,8 +575,8 @@ body.ui-hidden.interactive .showbtn{display:grid}
           <kbd>F</kbd><span>fullscreen</span>
           <kbd>H</kbd><span>hide / show controls</span>
           <kbd>S</kbd><span>save the look on screen</span>
-          <kbd>Drag</kbd><span>stir Ink, pull the Swarm, draw a Mandala, spin the Laser, look around in 3D Worlds and Sound Weaver</span>
-          <kbd>Wheel</kbd><span>zoom the Laser and 3D Worlds, speed up Sound Weaver</span>
+          <kbd>Drag</kbd><span>stir Ink, pull the Swarm, draw a Mandala, spin the Laser, look around in 3D Worlds, Sound Weaver and Music Box</span>
+          <kbd>Wheel</kbd><span>zoom the Laser, 3D Worlds and Music Box, speed up Sound Weaver</span>
         </div>
       </details>
     </div>
@@ -576,7 +591,7 @@ body.ui-hidden.interactive .showbtn{display:grid}
 const $ = s => document.querySelector(s);
 const clamp = (v,a,b) => v<a?a:v>b?b:v;
 const el = (tag, cls) => { const e = document.createElement(tag); if (cls) e.className = cls; return e; };
-const ENGINES = ['hyper','weave','deep','ink','swarm','mandala','laser','milk','avs','classic','reactor'];
+const ENGINES = ['hyper','weave','box','deep','ink','swarm','mandala','laser','milk','avs','classic','reactor'];
 const WALL = /wallpaper/.test(location.hash);   // #wallpaper: no UI, driven by a host (Android live wallpaper, Lively, Wallpaper Engine, Cast receiver)
 
 /* ================= defaults ================= */
@@ -931,6 +946,34 @@ MODE_DEF.weave = {
   music:{ swell:1, beads:1, steer:1, branches:2, rings:1, shimmer:1 },
   look:{ ribbons:'three', width:1, glow:0.6, blur:0.5, pal:'neon', hueSpeed:6, stars:0.5 }
 };
+/* ---------- Music Box (v14): dials and defaults ---------- */
+const BOX_COLORS = [['fifths','By note: circle of fifths'],['chromatic','By note: rainbow'], ...PAL_OPTS];
+MODE_UI.box = {
+  notes: { label:'Notes', desc:'Every note the music is playing draws its own line on a slowly turning drum: low notes at the bottom, high notes at the top, each note in its own colour. Held notes become long arcs, melodies step or glide, chords stack up. Loudness only sets how bright a line is.', controls:[
+    { t:'range', k:'sens', l:'Note sensitivity', min:0.3, max:3, step:0.05, tip:'How easily a sound counts as a note. Raise it for quiet or busy music, lower it if stray lines appear.' },
+    { t:'range', k:'voices', l:'Voices', min:1, max:6, step:1, tip:'How many notes can draw at once: 1 follows only the strongest (usually the melody or bass), 6 draws full chords.' },
+    { t:'range', k:'glide', l:'Glide', min:0, max:1, step:0.01, tip:'How a line moves to the next nearby note: 0 jumps straight there, higher slides there in a smooth curve.' },
+    { t:'range', k:'sustain', l:'Sustain', min:0, max:1, step:0.01, tip:'How long a line keeps going after its note fades.' },
+    { t:'select', k:'range', l:'Pitch range', o:[['wide','Wide (E1 to E7)'],['mid','Middle (C2 to C6)'],['tight','Tight (C3 to C6)']], tip:'Which notes fit on the drum, bottom to top. Tight spreads melodies out more.' } ] },
+  motion: { label:'Motion', desc:'How the drum turns and how you see it. Drag the picture to look around, scroll or pinch to zoom.', controls:[
+    { t:'range', k:'loop', l:'Turn time', min:4, max:30, step:0.5, fmt:v=>v+' s', tip:'Seconds for one full turn of the drum: short packs the notes tight, long spreads a few bars around it.' },
+    { t:'range', k:'tilt', l:'Tilt', min:0, max:1.2, step:0.01, tip:'How far above the drum you look from.' },
+    { t:'range', k:'sway', l:'Sway', min:0, max:2, step:0.05, tip:'The view slowly drifts around the drum.' },
+    { t:'range', k:'zoom', l:'Zoom', min:0.5, max:2, step:0.01, tip:'Size on screen. Scroll or pinch does the same.' },
+    { t:'range', k:'history', l:'History', min:0.2, max:1, step:0.01, tip:'How much of a turn stays visible before old notes fade out.' } ] },
+  look: { label:'Look', desc:'Line thickness, glow, colours and the guide marks.', controls:[
+    { t:'range', k:'width', l:'Line width', min:0.3, max:3, step:0.05, tip:'Thickness of every note line.' },
+    { t:'range', k:'glow', l:'Glow', min:0, max:1, step:0.01, tip:'Soft light around the lines.' },
+    { t:'select', k:'colors', l:'Colours', o:BOX_COLORS, tip:'Circle of fifths gives notes that sound good together neighbouring colours; rainbow runs C to B around the colour wheel; the palettes spread the notes across a palette.' },
+    { t:'range', k:'bars', l:'Beat lines', min:0, max:1, step:0.01, tip:'Each kick draws a faint line across the drum, like bar lines on sheet music. 0 = none.' },
+    { t:'range', k:'sparkle', l:'Hat sparkle', min:0, max:1, step:0.01, tip:'Hi-hats twinkle at the playhead. 0 = none.' },
+    { t:'range', k:'grid', l:'Octave rings', min:0, max:1, step:0.01, tip:'Faint rings at every C, like the lines of a staff.' } ] }
+};
+MODE_DEF.box = {
+  notes:{ sens:1, voices:4, glide:0.5, sustain:0.35, range:'wide' },
+  motion:{ loop:12, tilt:0.38, sway:0.6, zoom:1, history:0.85 },
+  look:{ width:1, glow:0.6, colors:'fifths', bars:0.45, sparkle:0.5, grid:0.35 }
+};
 const MODE_KEYS = Object.keys(MODE_UI);
 
 /* ================= 3D Worlds (PC): ten raymarched scenes ================= */
@@ -1005,7 +1048,7 @@ const ECHO_OPTS = [['zoomin','Tunnel (flows outward)'],['zoomout','Pull back (fl
 const ECHO_KEYS = Object.keys(ECHO);
 
 const DEF = { v:4, engine:'hyper', preset:'', sens:1.2, rel:0.80, thr:1.35, vol:80, autoCycle:false, beatSwitch:false, cycle:20, blend:2.7, quality:1, motion:1, colorPulse:0.5, hyq:1,
-  motionSens:1, colorSens:1, trails:0, echoMode:'zoomin', echoHue:0, d3q:1, drvB:1, drvM:1, drvH:1, drvK:1, dyn:0.7 };
+  motionSens:1, colorSens:1, trails:0, echoMode:'zoomin', echoHue:0, d3q:1, drvB:1, drvM:1, drvH:1, drvK:1, dyn:0.7, bright:1 };
 let S;
 function buildState(j){ let S;
   if (!j || (j.v !== 2 && j.v !== 3 && j.v !== 4)) j = {};
@@ -1025,7 +1068,7 @@ function buildState(j){ let S;
   for (const k in D3_SCENES) S.deep.fx[k] = Object.assign({}, D3_SCENES[k].def, (j.deep && j.deep.fx && j.deep.fx[k]) || {});
   const num = (v, a, b, d) => { v = +v; return isFinite(v) ? clamp(v, a, b) : d; };
   S.motion = num(S.motion, 0, 3, 1); S.colorPulse = num(S.colorPulse, 0, 3, 0.5); S.motionSens = num(S.motionSens, 0.1, 10, 1); S.colorSens = num(S.colorSens, 0.1, 10, 1);
-  S.trails = num(S.trails, 0, 1, 0); S.echoHue = num(S.echoHue, 0, 1, 0); S.sens = num(S.sens, 0.1, 6, 1.2); if (!ECHO_KEYS.includes(S.echoMode)) S.echoMode = 'zoomin';
+  S.bright = num(S.bright, 0.2, 1.5, 1); S.trails = num(S.trails, 0, 1, 0); S.echoHue = num(S.echoHue, 0, 1, 0); S.sens = num(S.sens, 0.1, 6, 1.2); if (!ECHO_KEYS.includes(S.echoMode)) S.echoMode = 'zoomin';
   S.drvB = num(S.drvB, 0, 3, 1); S.drvM = num(S.drvM, 0, 3, 1); S.drvH = num(S.drvH, 0, 3, 1); S.drvK = num(S.drvK, 0, 3, 1); S.dyn = num(S.dyn, 0, 1, 0.7);
   return S;
 }
@@ -1519,7 +1562,7 @@ function loadExtra(){
   if (extraLoaded) return; const b = $('#btnExtra'); b.disabled = true; b.textContent = 'Loading…';
   const s = el('script'); s.src = 'https://cdn.jsdelivr.net/npm/butterchurn-presets@2.4.7/lib/butterchurnPresetsExtra.min.js';
   s.onload = () => { const X = window.butterchurnPresetsExtra && (window.butterchurnPresetsExtra.getPresets ? window.butterchurnPresetsExtra : window.butterchurnPresetsExtra.default); const n = X && X.getPresets ? addPresets(X.getPresets()) : 0; extraLoaded = true; b.textContent = '+' + n + ' presets added'; toast(n + ' extra presets added'); };
-  s.onerror = () => { b.disabled = false; b.textContent = 'Load extra pack (+100)'; toast('Extra pack failed to load'); };
+  s.onerror = () => { b.disabled = false; b.textContent = 'Load extra pack (+144)'; toast('Extra pack failed to load'); };
   document.head.appendChild(s);
 }
 function onBeat(){
@@ -2013,7 +2056,7 @@ const UI = {
   hyper: { effects: HY_SCENES },
   milked: { effects: ME_UI },
   deep: { effects: D3_SCENES },
-  swarm: { effects: MODE_UI.swarm }, ink: { effects: MODE_UI.ink }, mandala: { effects: MODE_UI.mandala }, laser: { effects: MODE_UI.laser }, weave: { effects: MODE_UI.weave },
+  swarm: { effects: MODE_UI.swarm }, ink: { effects: MODE_UI.ink }, mandala: { effects: MODE_UI.mandala }, laser: { effects: MODE_UI.laser }, weave: { effects: MODE_UI.weave }, box: { effects: MODE_UI.box },
   reactor: { effects: {
     feedback: { label:'Feedback', controls:[
       { t:'range', k:'trail', l:'Trail (decay)', min:0.70, max:0.985, step:0.005, fmt:v=>v.toFixed(3) },
@@ -2245,10 +2288,11 @@ vec3 sceneVoid(vec2 p){
     vec3 q = abs(vec3(0.9) - mod(ro + dir*s*0.6, vec3(1.8)));
     float pl = 0.0, sum = 0.0;
     for (int j = 0; j < 11; j++){ q = abs(q)/dot(q, q) - fold; float l = length(q); sum += abs(l - pl); pl = l; }
-    acc += fade*mix(vec3(s, s*s, s*s*s), pal(s*1.5 + 0.2), 0.55)*sum*sum*sum*0.00045;
+    float a = sum*sum*sum*0.00045; a = a/(1.0 + a*0.6);
+    acc += fade*mix(vec3(s, s*s, s*s*s), pal(s*1.5 + 0.2), 0.55)*a;
     fade *= 0.74; s += 0.12;
   }
-  return acc*(0.6 + 0.6*uLevel + 0.4*uBeat);
+  return acc*(0.75 + 0.35*uLevel + 0.25*uBeat);
 }
 // Droste: the image nested inside itself forever, zooming in
 vec3 sceneDroste(vec2 p){
@@ -2315,7 +2359,7 @@ const HY_DISP = `#version 300 es
 precision highp float;
 uniform sampler2D uTex;
 uniform vec2 uRes;
-uniform float uHue, uSat, uBright, uContrast, uChroma, uVig;
+uniform float uHue, uSat, uBright, uContrast, uChroma, uVig, uExpo;
 out vec4 fragColor;
 vec3 hueRot(vec3 c, float h){
   const mat3 toY = mat3(0.299, 0.596, 0.211, 0.587, -0.274, -0.523, 0.114, -0.322, 0.312);
@@ -2327,7 +2371,9 @@ void main(){
   vec3 c = vec3(texture(uTex, uv + d).r, texture(uTex, uv).g, texture(uTex, uv - d).b);
   c = hueRot(c, uHue);
   float l = dot(c, vec3(0.299, 0.587, 0.114)); c = mix(vec3(l), c, uSat);
-  c *= uBright; c = (c - 0.5)*uContrast + 0.5;
+  c *= uBright*uExpo; c = max((c - 0.5)*uContrast + 0.5, 0.0);
+  // soft shoulder: below 0.62 nothing changes, brighter values roll off toward white instead of clipping flat
+  c = mix(c, vec3(0.62) + 0.38*(1.0 - exp(-(c - 0.62)/0.38)), step(vec3(0.62), c));
   vec2 v = uv - 0.5; c *= 1.0 - uVig*dot(v, v)*1.8;
   fragColor = vec4(clamp(c, 0.0, 1.0), 1.0);
 }`;
@@ -2340,7 +2386,9 @@ const HY_PALS = {
   moon:    [[0.55,0.55,0.62],[0.45,0.45,0.45],[1,1,1],[0.00,0.05,0.12]]
 };
 const HY_U = ['uPrev','uImg','uRes','uCenter','uTime','uZoom','uFlight','uRot','uBass','uMid','uTreb','uLevel','uBeat','uScene','uFirst','uTwist','uArms','uDetail','uOct','uStars','uStreak','uCore','uTrail','uFbZoom','uFbRot','uWarp','uKal','uNest','uLevelRot','uImgScale','uInject','uDepth','uWobble','uImgAsp','uPa','uPb','uPc','uPd'];
-const HY_UD = ['uTex','uRes','uHue','uSat','uBright','uContrast','uChroma','uVig'];
+const HY_UD = ['uTex','uRes','uHue','uSat','uBright','uContrast','uChroma','uVig','uExpo'];
+// per-scene exposure: scenes whose maths comes out much brighter than the rest are brought into line (dials stay as they were)
+const HY_EXPO = { void:0.8, wormhole:0.5, imgtunnel:0.7, droste:0.85, kaleido:0.9, liquid:0.8 }, D3_EXPO = { gyroid:0.55, cathedral:0.75 };
 const hyCv = $('#hyper');
 const HY = { tried:false, ok:false, gl:null, fb:[], tx:[], W:0, H:0, cur:0, frame:0, zoom:0, flight:0, rot:0, hue:0, imgVer:0, imgAsp:1, imgTex:null, pF:null, pD:null, uF:{}, uD:{}, t0:performance.now() };
 function hyProgram(gl, fsrc){
@@ -2429,7 +2477,7 @@ function renderHyper(now, dt){
   gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, HY.tx[dst]);
   const D = HY.uD; gl.uniform1i(D.uTex, 0); gl.uniform2f(D.uRes, hyCv.width, hyCv.height);
   gl.uniform1f(D.uHue, (val('hue') + HY.hue)*Math.PI/180); gl.uniform1f(D.uSat, val('sat')); gl.uniform1f(D.uBright, val('bright')*(0.92 + 0.16*A.level + 0.1*A.kick));
-  gl.uniform1f(D.uContrast, val('contrast')); gl.uniform1f(D.uChroma, val('chroma')*(1 + 1.6*A.beat + 2.2*A.hat)); gl.uniform1f(D.uVig, val('vig'));
+  gl.uniform1f(D.uContrast, val('contrast')); gl.uniform1f(D.uChroma, val('chroma')*(1 + 1.6*A.beat + 2.2*A.hat)); gl.uniform1f(D.uVig, val('vig')); gl.uniform1f(D.uExpo, HY_EXPO[key] || 1);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
   HY.cur = dst; HY.frame++;
 }
@@ -2572,7 +2620,7 @@ function postFrame(dt){
 
 /* ================= new modes: Swarm · Ink · Mandala · Laser (and the stage pointer they share) ================= */
 // Every mode keeps playing by itself from the music; on top of that each one has its own way to play with it on the picture.
-const INTERACTIVE = new Set(['swarm', 'ink', 'mandala', 'laser', 'deep', 'weave']);
+const INTERACTIVE = new Set(['swarm', 'ink', 'mandala', 'laser', 'deep', 'weave', 'box']);
 const TAU = Math.PI*2;
 let RGEN = 1;                                   // bumped by resize(); engines re-measure the stage when it changes
 const MODE_RT = {};                             // per engine: { down(x,y), move(x,y,dx,dy), up(), tap(x,y), dbl(x,y), wheel(d), pinch(f) }
@@ -3681,7 +3729,7 @@ function renderDeep(now, dt){
   const Dp = D3.disp, Du = Dp.u; gl.useProgram(Dp.p);
   glBindTex(gl, 0, D3.fb.tex, Du.uTex); gl.uniform2f(Du.uRes, D3.cw, D3.ch);
   gl.uniform1f(Du.uHue, (val('hue') + D3.hue)*Math.PI/180); gl.uniform1f(Du.uSat, val('sat')); gl.uniform1f(Du.uBright, val('bright')*(0.94 + 0.12*A.level + 0.08*A.kick));
-  gl.uniform1f(Du.uContrast, val('contrast')); gl.uniform1f(Du.uChroma, val('chroma')*(1 + 1.6*A.beat + 2*A.hat)); gl.uniform1f(Du.uVig, val('vig'));
+  gl.uniform1f(Du.uContrast, val('contrast')); gl.uniform1f(Du.uChroma, val('chroma')*(1 + 1.6*A.beat + 2*A.hat)); gl.uniform1f(Du.uVig, val('vig')); gl.uniform1f(Du.uExpo, D3_EXPO[S.deep.scene] || 1);
   glDraw(gl, Dp, null, D3.cw, D3.ch);
 }
 MODE_RT.deep = {
@@ -3848,16 +3896,217 @@ MODE_RT.weave = {
   dbl(){ WV.lookX = WV.lookY = 0; flash('Sound Weaver · view centred'); }
 };
 
+/* ================= Music Box (v14): every note draws its own line ================= */
+// A slowly turning drum seen from just above. A small pitch tracker listens for the notes that are actually playing and
+// each one is written onto the drum at the playhead facing you: at its own height (pitch: low at the bottom, high at the
+// top) and in its own colour (pitch class). Held notes become long arcs, melodies step or glide between heights, chords
+// stack up as parallel lines, and the drum keeps turning so the last few bars wrap around it and fade. Kicks draw faint bar
+// lines, hats sparkle at the playhead. Loudness only sets how bright a line is, never where it goes.
+// Pitch tracker. Two spectra of the same sound: a long one (8192 points: ≈5.4 Hz bins over 0.19 s) for low and middle
+// partials and a short one (2048 points, 0.05 s) above 1.5 kHz, where quick notes need speed more than fine bins. In each,
+// the peaks standing clearly above the local noise floor are found to a fraction of a bin. Every note E1–E7 is scored by how
+// many of its first eight partials line up with those peaks (its pitch refined from its own fundamental first, so chance
+// peaks rarely line up), and the strongest notes are taken one at a time, each removing the peaks it explains so that its
+// overtones don't come back as notes of their own. A note has to be heard twice in a row to start a line. Tuned offline on
+// five test pieces with known notes (synth house, trance, piano, flute with vibrato, dense EDM).
+const PT = { an:null, an2:null, B:null, B2:null, hz:0, hz2:0, k1:0, k2:0, pre:null, pf:null, pa:null, pa0:null, pdb:null, np:0,
+  match:null, ok:null, sal:null, mw:null, gH:null, f0:null, pend:new Map(), top:0 };
+const PT_LO = 28, PT_HI = 100, PT_N = PT_HI - PT_LO + 1, PT_H = 8, PT_HC = 12, PT_SPLIT = 1500, PT_FMAX = 5200;
+const BOX_RANGE = { wide:[28, 100], mid:[36, 84], tight:[48, 84] };
+function ptInit(){
+  if (PT.an) return true;
+  if (!actx || !bus) return false;
+  try {
+    const mk = n => { const an = actx.createAnalyser(); an.fftSize = n; an.smoothingTimeConstant = 0; an.minDecibels = -140; an.maxDecibels = 0; bus.connect(an); return an; };
+    PT.an = mk(8192); PT.an2 = mk(2048);
+    PT.B = new Float32Array(PT.an.frequencyBinCount); PT.B2 = new Float32Array(PT.an2.frequencyBinCount);
+    PT.hz = actx.sampleRate/8192; PT.hz2 = actx.sampleRate/2048;
+    PT.k1 = Math.min(4094, Math.ceil(PT_FMAX/PT.hz) + 2); PT.k2 = Math.min(1022, Math.ceil(PT_FMAX/PT.hz2) + 2);
+    PT.pre = new Float64Array(PT.k1 + 3); PT.pf = new Float64Array(600); PT.pa = new Float64Array(600); PT.pa0 = new Float64Array(600); PT.pdb = new Float64Array(600);
+    PT.match = new Int32Array(PT_N*(PT_HC + 1)); PT.ok = new Uint8Array(PT_N); PT.sal = new Float64Array(PT_N); PT.mw = new Float64Array(PT_HC + 2);
+    PT.gH = new Float64Array(PT_HC + 1); for (let h=1;h<=PT_HC;h++) PT.gH[h] = 1/Math.sqrt(h);
+    PT.f0 = new Float64Array(PT_N); for (let i=0;i<PT_N;i++) PT.f0[i] = 440*Math.pow(2, (PT_LO + i - 69)/12);
+  } catch(e){ PT.an = null; return false; }
+  return true;
+}
+// the peaks of one spectrum between fLo and fHi: frequency, height over the local floor (as a ratio, and in dB)
+function ptPeaks(B, hz, kmax, fLo, fHi){
+  const pre = PT.pre; pre[0] = 0;
+  for (let k=0;k<=kmax + 1;k++) pre[k + 1] = pre[k] + Math.max(B[k], -140);
+  let gmax = -999; for (let k=2;k<=kmax;k++) if (B[k] > gmax) gmax = B[k];
+  const kLo = Math.max(2, Math.floor(fLo/hz)), kHi = Math.min(kmax, Math.ceil(fHi/hz));
+  for (let k=kLo;k<=kHi;k++){ const b = B[k]; if (!(b > B[k - 1] && b >= B[k + 1])) continue;
+    const R = Math.max(12, Math.round(k*0.3)), lo = Math.max(0, k - R), hi = Math.min(kmax + 1, k + R), prom = b - (pre[hi + 1] - pre[lo])/(hi - lo + 1);
+    if (prom < 9 || b < gmax - 60 || b < -110) continue;           // 9 dB over the floor keeps noise (hats, claps) out
+    const a = B[k - 1], c = B[k + 1], den = a - 2*b + c, d = den < 0 ? clamp(0.5*(a - c)/den, -0.5, 0.5) : 0, f = (k + d)*hz;
+    if (f < fLo || f >= fHi || PT.np >= PT.pf.length) continue;
+    PT.pf[PT.np] = f; PT.pa[PT.np] = Math.pow(10, prom/20); PT.pdb[PT.np] = prom; PT.np++; }
+  return gmax;
+}
+// the strongest peak within ±tol Hz of f (peaks are in frequency order)
+function ptFind(f, tol){
+  const pf = PT.pf, np = PT.np; let lo = 0, hi = np;
+  while (lo < hi){ const mid = (lo + hi) >> 1; if (pf[mid] < f - tol) lo = mid + 1; else hi = mid; }
+  let best = -1, bw = 0; for (let i=lo;i<np && pf[i] <= f + tol;i++){ const dv = (pf[i] - f)/tol, w = PT.pa0[i]*(1 - 0.5*dv*dv); if (w > bw){ bw = w; best = i; } }
+  return best;
+}
+// The notes sounding right now, strongest first: [{ m: MIDI note number, s: strength 0.25–1 }]
+function ptDetect(maxN, sens){
+  PT.an.getFloatFrequencyData(PT.B); PT.an2.getFloatFrequencyData(PT.B2); PT.np = 0;
+  const g = Math.max(ptPeaks(PT.B, PT.hz, PT.k1, 20, PT_SPLIT), ptPeaks(PT.B2, PT.hz2, PT.k2, PT_SPLIT, PT_FMAX));
+  if (g < -75 || !PT.np){ PT.top = 0; return []; }                 // below about -75 dBFS: silence
+  const { pf, pa, pa0, pdb, match, ok, sal, mw, gH, f0 } = PT, R1 = PT_HC + 1, np = PT.np, bin = f => f >= PT_SPLIT ? PT.hz2 : PT.hz;
+  const c50 = Math.pow(2, 50/1200) - 1, c30 = Math.pow(2, 30/1200) - 1;
+  for (let j=0;j<np;j++) pa0[j] = pa[j];
+  // line every note's partials up with the peaks once: its own fundamental (or 2nd partial) fixes its exact pitch, the
+  // rest must sit within 30 cents of that pitch's multiples; a note whose pitch rounds to a neighbour leaves it to the neighbour
+  for (let i=0;i<PT_N;i++){ const fi = f0[i], o = i*R1; let est = fi, known = false;
+    const j1 = ptFind(fi, Math.max(fi*c50, 0.7*bin(fi)));
+    if (j1 >= 0){ est = pf[j1]; known = true; }
+    else if (2*fi <= PT_FMAX){ const j2 = ptFind(2*fi, Math.max(2*fi*c50, 0.7*bin(2*fi))); if (j2 >= 0){ est = pf[j2]/2; known = true; } }
+    ok[i] = Math.round(69 + 12*Math.log2(est/440)) === PT_LO + i ? 1 : 0; match[o + 1] = j1;
+    let acc = j1 >= 0 ? pf[j1] : 0, wsum = j1 >= 0 ? 1 : 0;
+    for (let h=2;h<=PT_HC;h++){ const fh = est*h; if (fh > PT_FMAX){ match[o + h] = -2; continue; }
+      const j = ptFind(fh, known ? Math.max(fh*c30, 0.5*bin(fh)) : Math.max(fh*c50, 0.7*bin(fh))); match[o + h] = j;
+      if (j >= 0){ acc += pf[j]; wsum += h; est = acc/wsum; known = true; } } }
+  const out = []; let first = 0;
+  for (let it=0; it<maxN; it++){
+    let bi = -1, bv = 0;
+    for (let i=0;i<PT_N;i++){ if (!ok[i]){ sal[i] = 0; continue; }
+      let s = 0, gs = 0, p1 = 0, cnt = 0, solo = 0;
+      for (let h=1;h<=PT_H;h++){ const j = match[i*R1 + h]; if (j === -2) break; gs += gH[h];
+        if (j >= 0 && pa[j] > 0){ const w = Math.pow(pa[j], 0.25); s += w*gH[h]; cnt++; if (h === 1) p1 = w; if (pdb[j] > solo) solo = pdb[j]; } }
+      if (!cnt){ sal[i] = 0; continue; }
+      s /= Math.sqrt(gs);
+      if (p1 <= 0) s *= 0.3;                                          // nothing at the fundamental: likely a ghost of another note
+      if (cnt === 1 && solo < 14) s *= 0.25;                          // one weak peak alone is more likely noise than a note
+      sal[i] = s; if (s > bv){ bv = s; bi = i; } }
+    if (!it) first = bv;
+    if (bi < 0 || bv < Math.max(2/sens, first*0.3)) break;
+    out.push({ m:bi + PT_LO, s:clamp((bv - 1.2)/5, 0.25, 1) });
+    // take away what this note explains: every peak on its partials
+    for (let h=1;h<=PT_HC;h++){ const j = match[bi*R1 + h]; if (j === -2) break; if (j >= 0) pa[j] = 0; }
+  }
+  PT.top = first;
+  return out;
+}
+
+const BX = { ok:false, cv:$('#box'), ctx:null, W:0, H:0, px:1, gen:0, T:0, ang:0, lastDet:-1, voices:[], segs:[], marks:[], sparks:[], yaw:0, pitch:0, drag:false, slow:0 };
+function initBox(){
+  if (BX.ok) return true;
+  BX.ctx = BX.cv.getContext('2d'); if (!BX.ctx) return false;
+  BX.ok = true; bxSize(); return true;
+}
+function bxSize(){
+  if (BX.gen === RGEN && BX.W) return; BX.gen = RGEN;
+  const r = stageRect(), d0 = Math.min(window.devicePixelRatio || 1, 1.5), cap = PC_CLASS ? 2200 : 1500, d = d0*Math.min(1, cap/Math.hypot(r.w*d0, r.h*d0));
+  const W = Math.max(16, Math.round(r.w*d)), H = Math.max(16, Math.round(r.h*d));
+  BX.px = W/Math.max(1, r.w);
+  if (W === BX.W && H === BX.H) return;
+  BX.cv.width = W; BX.cv.height = H; BX.W = W; BX.H = H;
+}
+// note colour, 0–255: by pitch class (circle of fifths puts notes that sound good together side by side), higher octaves brighter
+function bxColor(m, L){
+  const pc = ((m % 12) + 12) % 12, v = 0.78 + 0.22*clamp((m - 36)/48, 0, 1);
+  const c = L.colors === 'fifths' ? hsvRGB(((pc*7) % 12)/12, 0.7, v) : L.colors === 'chromatic' ? hsvRGB(pc/12, 0.7, v) : palRGB(L.colors, pc/12).map(x => x*v);
+  return c.map(x => Math.round(clamp(x, 0, 1)*255));
+}
+function bxSeg(v, col, from){ const sg = { pts:from ? [from] : [], col, end:0 }; BX.segs.push(sg); v.seg = sg; }
+function bxTrack(det, F){
+  const N = F.notes, now = BX.T, maxV = clamp(N.voices|0, 1, 6), hold = 0.06 + N.sustain*0.5, used = det.map(() => false);
+  for (const v of BX.voices){ const i = det.findIndex((d, j) => !used[j] && d.m === v.m); if (i >= 0){ used[i] = true; v.seen = now; v.s += (det[i].s - v.s)*0.4; } }
+  // a line that just lost its note moves on to an unclaimed note close by (a melody), instead of ending
+  for (const v of BX.voices){ if (v.seen === now || now - v.seen > 0.25) continue;
+    let bi = -1, bd = 4; det.forEach((d, j) => { if (used[j]) return; const dd = Math.abs(d.m - v.m); if (dd <= 3 && dd < bd){ bd = dd; bi = j; } });
+    if (bi >= 0){ used[bi] = true; v.m = det[bi].m; v.seen = now; v.s = det[bi].s; v.moved = true; } }
+  // a new note starts a line once it has been heard twice in a row
+  const heard = new Set();
+  det.forEach((d, j) => { if (used[j]) return; heard.add(d.m); const n = (PT.pend.get(d.m) || 0) + 1; PT.pend.set(d.m, n);
+    if (n >= 2 && BX.voices.length < maxV){ BX.voices.push({ m:d.m, y:d.m, s:d.s, seen:now, seg:null, moved:false, col:null }); PT.pend.delete(d.m); } });
+  for (const k of [...PT.pend.keys()]) if (!heard.has(k)) PT.pend.delete(k);
+  BX.voices = BX.voices.filter(v => { if (now - v.seen <= hold) return true; if (v.seg) v.seg.end = now; return false; });
+}
+function bxStep(sec){
+  const F = S.box.fx, N = F.notes, Mo = F.motion, L = F.look;
+  BX.T += sec; BX.ang += sec*TAU/Math.max(2, Mo.loop);
+  if (!BX.drag){ const k = Math.exp(-sec/8); BX.yaw *= k; BX.pitch *= k; }
+  if (ptInit() && BX.T - BX.lastDet >= 0.03){ BX.lastDet = BX.T; bxTrack(ptDetect(clamp(N.voices|0, 1, 6) + 2, N.sens), F); }
+  const g = 1 - Math.exp(-sec/(0.012 + N.glide*0.14));
+  for (const v of BX.voices){
+    v.y += (v.m - v.y)*g;
+    const col = bxColor(v.m, L), last = v.seg && v.seg.pts[v.seg.pts.length - 1];
+    if (!v.seg) bxSeg(v, col, null);
+    else if (v.moved || col.join() !== v.seg.col.join()){ v.seg.end = BX.T; bxSeg(v, col, last); v.moved = false; }   // new note: new colour, line continues
+    const pl = v.seg.pts[v.seg.pts.length - 1];
+    if (!pl || BX.ang - pl.a > 0.006 || Math.abs(v.y - pl.y) > 0.04) v.seg.pts.push({ a:BX.ang, y:v.y, w:0.55 + 0.45*v.s, t:BX.T });
+  }
+  const kick = bandHit(0), hat = bandHit(2), life = Math.max(1, Mo.loop*Mo.history);
+  if (kick > 0 && L.bars > 0.01) BX.marks.push({ a:BX.ang, t:BX.T, s:Math.min(1, 0.4 + kick*0.6) });
+  if (hat > 0 && L.sparkle > 0.01){ const [lo, hi] = BOX_RANGE[N.range] || BOX_RANGE.wide;
+    for (let i=0;i<3 && BX.sparks.length < 200;i++) BX.sparks.push({ a:BX.ang - Math.random()*0.05, m:lo + Math.random()*(hi - lo), t:BX.T, ph:Math.random()*TAU }); }
+  for (const sg of BX.segs) while (sg.pts.length > 1 && BX.T - sg.pts[0].t > life) sg.pts.shift();
+  BX.segs = BX.segs.filter(sg => sg.pts.length && (!sg.end || BX.T - sg.pts[sg.pts.length - 1].t < life));
+  BX.marks = BX.marks.filter(q => BX.T - q.t < life); BX.sparks = BX.sparks.filter(q => BX.T - q.t < 0.7);
+}
+function bxDraw(){
+  const F = S.box.fx, N = F.notes, Mo = F.motion, L = F.look, c = BX.ctx, w = BX.W, h = BX.H, px = BX.px;
+  const [lo, hi] = BOX_RANGE[N.range] || BOX_RANGE.wide, Hh = 0.8*clamp(h/w*0.7, 1, 1.3), life = Math.max(1, Mo.loop*Mo.history);   // a taller drum on a portrait screen
+  const el = clamp(Mo.tilt + BX.pitch + Mo.sway*0.07*Math.sin(BX.T*0.11), -0.25, 1.45), yaw0 = BX.yaw + Mo.sway*0.3*Math.sin(BX.T*0.07);
+  const ce = Math.cos(el), se = Math.sin(el), Dc = 3.4/clamp(Mo.zoom, 0.3, 3), f = Math.min(w, h)*1.15, CX = w/2, CY = h/2;
+  const Y = m => ((m - lo)/(hi - lo)*2 - 1)*Hh;
+  const P = (phi, y) => { const x = Math.sin(phi + yaw0), z = Math.cos(phi + yaw0), yc = y*ce - z*se, zc = y*se + z*ce, d = Dc - zc; return [CX + x*f/d, CY - yc*f/d, f/d, z]; };
+  const fog = z => 0.28 + 0.72*(z*0.5 + 0.5);
+  c.globalCompositeOperation = 'source-over'; c.fillStyle = 'rgba(5,6,10,0.5)'; c.fillRect(0, 0, w, h);
+  c.globalCompositeOperation = 'lighter'; c.lineCap = 'round'; c.lineJoin = 'round';
+  // the drum: rims and a faint ring at every C, front half brighter than the back
+  const ring = (y, a) => { for (let half=0;half<2;half++){ const p = new Path2D(); for (let i=0;i<=24;i++){ const phi = (half ? Math.PI : 0) - Math.PI/2 + i/24*Math.PI - yaw0, q = P(phi, y); if (i) p.lineTo(q[0], q[1]); else p.moveTo(q[0], q[1]); }
+    c.strokeStyle = 'rgba(150,170,220,' + (a*(half ? 0.35 : 1)).toFixed(3) + ')'; c.lineWidth = Math.max(px, 1.2*px); c.stroke(p); } };
+  ring(-Hh, 0.18); ring(Hh, 0.18);
+  if (L.grid > 0.01) for (let m=Math.ceil(lo/12)*12; m<=hi; m+=12) ring(Y(m), 0.1*L.grid);
+  // bar lines from the kicks
+  for (const q of BX.marks){ const phi = q.a - BX.ang, a = q.s*L.bars*0.35*Math.max(0, 1 - (BX.T - q.t)/life), b = P(phi, -Hh), t = P(phi, Hh); if (a < 0.01) continue;
+    c.strokeStyle = 'rgba(200,210,255,' + (a*fog(b[3])).toFixed(3) + ')'; c.lineWidth = Math.max(px, 1.4*px*b[2]/300); c.beginPath(); c.moveTo(b[0], b[1]); c.lineTo(t[0], t[1]); c.stroke(); }
+  // the notes: each segment in chunks, each chunk with its own depth fade and width
+  const t0 = performance.now(), cheap = BX.slow > 14;
+  for (const sg of BX.segs){ const pts = sg.pts, rgb = sg.col[0] + ',' + sg.col[1] + ',' + sg.col[2]; if (pts.length < 2) continue;
+    for (let i0=0;i0<pts.length - 1;i0+=16){ const i1 = Math.min(pts.length - 1, i0 + 16), mid = pts[(i0 + i1) >> 1];
+      const fa = Math.max(0, 1 - (BX.T - mid.t)/life); if (fa <= 0.01) continue;
+      const qm = P(mid.a - BX.ang, Y(mid.y)), al = fa*fa*fog(qm[3])*(0.5 + 0.5*mid.w), lw = Math.max(0.8*px, 0.011*mid.w*L.width*qm[2]);
+      const path = new Path2D(); for (let i=i0;i<=i1;i++){ const p = pts[i], q = P(p.a - BX.ang, Y(p.y)); if (i === i0) path.moveTo(q[0], q[1]); else path.lineTo(q[0], q[1]); }
+      if (L.glow > 0.01 && !cheap){ c.strokeStyle = 'rgba(' + rgb + ',' + (al*0.22*L.glow).toFixed(3) + ')'; c.lineWidth = lw*3.6; c.stroke(path); }
+      c.strokeStyle = 'rgba(' + rgb + ',' + al.toFixed(3) + ')'; c.lineWidth = lw; c.stroke(path); } }
+  // the playhead and the notes sounding on it
+  { const b = P(0, -Hh), t = P(0, Hh); c.strokeStyle = 'rgba(230,236,255,0.22)'; c.lineWidth = Math.max(px, 1.5*px); c.beginPath(); c.moveTo(b[0], b[1]); c.lineTo(t[0], t[1]); c.stroke(); }
+  for (const v of BX.voices){ const q = P(0, Y(v.y)), col = bxColor(v.m, L), r = Math.max(2*px, 0.02*q[2]*(0.6 + 0.4*v.s));
+    c.fillStyle = 'rgba(' + col.join(',') + ',0.25)'; c.beginPath(); c.arc(q[0], q[1], r*2.6, 0, TAU); c.fill();
+    c.fillStyle = 'rgba(' + col.map(x => Math.round(x + (255 - x)*0.6)).join(',') + ',0.95)'; c.beginPath(); c.arc(q[0], q[1], r, 0, TAU); c.fill(); }
+  for (const q of BX.sparks){ const age = BX.T - q.t, p = P(q.a - BX.ang, Y(q.m)), a = L.sparkle*(1 - age/0.7)*(0.6 + 0.4*Math.sin(q.ph + age*30)); if (a <= 0.02) continue;
+    c.fillStyle = 'rgba(255,245,215,' + a.toFixed(3) + ')'; c.beginPath(); c.arc(p[0], p[1], Math.max(px, 0.006*p[2]), 0, TAU); c.fill(); }
+  c.globalCompositeOperation = 'source-over';
+  BX.slow = BX.slow*0.95 + (performance.now() - t0)*0.05;
+}
+function renderBox(now, dt){
+  if (!BX.ok) return; bxSize();
+  bxStep(Math.min(0.05, dt/60)); bxDraw();
+}
+MODE_RT.box = {
+  down(){ BX.drag = true; }, up(){ BX.drag = false; },
+  move(x, y, dx, dy){ BX.yaw += dx*0.006; BX.pitch = clamp(BX.pitch + dy*0.004, -0.6, 0.9); },
+  wheel(d){ const m = S.box.fx.motion; setDial('box', 'motion', 'zoom', +clamp(m.zoom*Math.exp(-d*0.0012), 0.5, 2).toFixed(2)); },
+  pinch(f){ const m = S.box.fx.motion; setDial('box', 'motion', 'zoom', +clamp(m.zoom*f, 0.5, 2).toFixed(2)); },
+  dbl(){ BX.yaw = 0; BX.pitch = 0; flash('Music Box · view reset'); }
+};
+
 /* ---------- engine registry for the new modes ---------- */
-const MODE_INIT = { swarm:initSwarm, ink:initInk, mandala:initMandala, laser:initLaser, deep:initDeep, weave:initWeave };
-const MODE_OK = { swarm:() => SW.ok, ink:() => INK.ok, mandala:() => MD.ok, laser:() => LZ.ok, deep:() => D3.ok, weave:() => WV.ok };
-const MODE_RENDER = { swarm:renderSwarm, ink:renderInk, mandala:renderMandala, laser:renderLaser, deep:renderDeep, weave:renderWeave };
-const MODE_WHY = { ink:() => 'Ink ' + (INK.reason || 'is not supported here'), swarm:() => 'Swarm needs WebGL2', laser:() => 'Laser show needs WebGL2', mandala:() => 'Mandala could not start', deep:() => '3D Worlds needs a PC', weave:() => 'Sound Weaver could not start' };
+const MODE_INIT = { swarm:initSwarm, ink:initInk, mandala:initMandala, laser:initLaser, deep:initDeep, weave:initWeave, box:initBox };
+const MODE_OK = { swarm:() => SW.ok, ink:() => INK.ok, mandala:() => MD.ok, laser:() => LZ.ok, deep:() => D3.ok, weave:() => WV.ok, box:() => BX.ok };
+const MODE_RENDER = { swarm:renderSwarm, ink:renderInk, mandala:renderMandala, laser:renderLaser, deep:renderDeep, weave:renderWeave, box:renderBox };
+const MODE_WHY = { ink:() => 'Ink ' + (INK.reason || 'is not supported here'), swarm:() => 'Swarm needs WebGL2', laser:() => 'Laser show needs WebGL2', mandala:() => 'Mandala could not start', deep:() => '3D Worlds needs a PC', weave:() => 'Sound Weaver could not start', box:() => 'Music Box could not start' };
 function engineAvail(k){
   if (k==='milk') return milkOK;
   if (k==='hyper') return HY.ok || !HY.tried;
   if (k==='deep') return PC_CLASS ? (D3.ok || !D3.tried) : !!window.__remoteLinked;
-  if (MODE_INIT[k]) return MODE_OK[k]() || !((k==='mandala' || k==='weave') ? false : (k==='ink' ? INK.tried : k==='swarm' ? SW.tried : LZ.tried));
+  if (MODE_INIT[k]) return MODE_OK[k]() || !((k==='mandala' || k==='weave' || k==='box') ? false : (k==='ink' ? INK.tried : k==='swarm' ? SW.tried : LZ.tried));
   return true;
 }
 function modeStepGroup(eng, d){ const sel = $('#fxsel-'+eng), n = sel.options.length; if (!n) return; sel.selectedIndex = ((sel.selectedIndex + d) % n + n) % n; renderPanel(eng); flash(UI[eng].effects[sel.value].label); }
@@ -3879,6 +4128,7 @@ const ENGINE_TIPS = {
   swarm: 'Swarm: thousands of flocking particles. Hold on the picture to pull them, tap to blast them apart.',
   mandala: 'Mandala: draw on the picture and every stroke is mirrored around the centre. The music draws too.',
   laser: 'Laser show: glowing 3D figures traced by a beam. Drag to spin, scroll to zoom, double-click for a new figure.',
+  box: 'Music Box: every note the music plays draws its own line on a slowly turning drum: low notes at the bottom, high notes at the top, each note in its own colour. Held notes make long arcs, melodies step or glide, chords stack up. Drag to look around, scroll to zoom.',
   weave: 'Sound Weaver: the music writes glowing 3D ribbons and you fly through them. Bass swells and beads the violet ribbon, the melody steers the cyan one, hats make the gold thread twinkle. Drag to look around, scroll to change speed.',
   milk: 'MilkDrop: hundreds of classic MilkDrop 2 presets, with live edit dials like the M menu.',
   avs: 'AVS stack: build your own Winamp AVS-style effect from Trans (warp the last frame) and Render (draw) effects.',
@@ -4024,6 +4274,7 @@ const TIP_IDS = {
   lookName:'A name for the look you are about to save.', btnLookSave:'Saves what is on screen now: the visualizer, its scene or preset, and every dial.',
   btnLookQuick:'Saves this look with an automatic name (S). Rename it later under Saved looks.', btnLookUpdate:'Replaces the selected look with what is on screen now.',
   btnLookRename:'Renames the selected look.', btnLookDel:'Deletes the selected look. Press twice.',
+  bright:'Overall brightness of every visualizer, 20 % to 150 %. It only dims or brightens the picture; how much it reacts to the music stays the same. Double-click the word Bright for 100 %.',
   btnCloudIn:'Signs in with your Google account. Your saved looks are then kept in your account and show up on every device where you sign in. Looks already on this device are added too.',
   btnCloudOut:'Stops syncing on this device. Your looks stay here, and the copy in your account stays too.',
   btnCloudDel:'Deletes your account and every look stored in it. The looks on this device stay. Press twice.'
@@ -4147,6 +4398,7 @@ function colorPulse(){
     if (p > 1.5){ const h = (p - 1.5)*cpLvl*60; if (h > 0.5) f += ' hue-rotate(' + h.toFixed(1) + 'deg)'; }   // past 150 % the beats shove the hue too
   }
   if (engine==='milk'){ const ex = milkFilter(); if (ex) f = f ? f + ' ' + ex : ex; }
+  if (Math.abs(S.bright - 1) > 0.005) f = (f ? f + ' ' : '') + 'brightness(' + S.bright.toFixed(2) + ')';   // master Brightness, every visualizer
   if (cv !== cpEl){ if (cpEl) cpEl.style.filter = ''; cpEl = cv; cpLast = null; }
   if (f !== cpLast){ cpLast = f; cv.style.filter = f; }
 }
@@ -4166,6 +4418,10 @@ bindRange('cycle','cycle','oCycle', v => v+' s');
 bindRange('blend','blend','oBlend', v => v.toFixed(1)+' s');
 bindRange('quality','quality','oQuality', v => ['low','auto','device'][v|0], resize);
 bindRange('vol','vol','', v => '', () => { if (volNode) volNode.gain.value = S.vol/100; });
+{ const bi = $('#bright'), bo = $('#oBright'), sync = () => { bi.value = Math.round(S.bright*100); bo.textContent = Math.round(S.bright*100) + '%'; };
+  sync(); BOUND.push(sync);
+  bi.addEventListener('input', () => { S.bright = clamp(bi.value/100, 0.2, 1.5); bo.textContent = Math.round(S.bright*100) + '%'; save(); });
+  bi.parentElement.querySelector('span').addEventListener('dblclick', () => { S.bright = 1; sync(); save(); }); }
 /* Feel: Motion and Color pulse 0–300 %, a sensitivity for each (0.1–10×, log scale, centre = 1×), and the trails / echo pass.
    Double-click a label to put that dial back. */
 { const LOG = v => +Math.pow(10, v/100).toFixed(3), UNLOG = g => Math.round(Math.log10(clamp(g, 0.1, 10))*100);
@@ -4258,7 +4514,7 @@ function looksGrab(cb){ let done = false; const fin = th => { if (done) return; 
 function lookImage(){ if (!IMG.user || !IMG.el) return '';
   try { const k = Math.min(1, 448/Math.max(IMG.el.width, IMG.el.height)), c = el('canvas'); c.width = Math.max(1, Math.round(IMG.el.width*k)); c.height = Math.max(1, Math.round(IMG.el.height*k));
     c.getContext('2d').drawImage(IMG.el, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', 0.8); } catch(e){ return ''; } }
-function lookSnapshot(){ const st = JSON.parse(stateJSON()); REMOTE_LOCAL.forEach(k => { delete st[k]; });
+function lookSnapshot(){ const st = JSON.parse(stateJSON()); REMOTE_LOCAL.forEach(k => { delete st[k]; }); delete st.bright;   // Brightness is a viewing setting, not part of the look
   const img = st.engine === 'hyper' && (HY_SCENES[st.hyper.scene] || {}).group === 'Your image' ? lookImage() : '';
   return { st, img }; }
 function lookSave(name){
@@ -4284,7 +4540,7 @@ function lookUpdate(id){
 function lookApply(id){
   const L = LOOKS.list.find(x => x.id === id); if (!L) return;
   try { ensureCtx(); } catch(e){}
-  applyState(JSON.parse(JSON.stringify(L.state)));
+  const st = JSON.parse(JSON.stringify(L.state)); st.bright = S.bright; applyState(st);
   if (L.img) loadImageURL(L.img, true);
   remoteQueue(); if (L.img) remoteImage();
   LOOKS.sel = id; looksRender(); flash(L.name);
