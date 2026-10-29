@@ -228,6 +228,11 @@ body.ui-hidden.interactive .showbtn{display:grid}
     <canvas id="laser" hidden></canvas>
     <canvas id="weave" hidden></canvas>
     <canvas id="box" hidden></canvas>
+    <canvas id="tonnetz" hidden></canvas>
+    <canvas id="terrain" hidden></canvas>
+    <canvas id="attract" hidden></canvas>
+    <canvas id="cymatic" hidden></canvas>
+    <canvas id="memory" hidden></canvas>
     <canvas id="post" hidden></canvas>
     <div id="deepRemote" hidden><div><b>3D Worlds is playing on your PC</b><span id="deepRemoteScene"></span>Pick scenes and turn the dials here; the PC follows.</div></div>
     <div class="flash" id="flash"></div>
@@ -261,6 +266,11 @@ body.ui-hidden.interactive .showbtn{display:grid}
             <option value="hyper">Hyperspace</option>
             <option value="weave">Sound Weaver</option>
             <option value="box">Music Box</option>
+            <option value="tonnetz">Harmony Lattice</option>
+            <option value="cymatic">Cymatics</option>
+            <option value="terrain">Sound Terrain</option>
+            <option value="attract">Attractor</option>
+            <option value="memory">Song Memory</option>
             <option value="deep">3D Worlds (PC)</option>
             <option value="ink">Ink (fluid)</option>
             <option value="swarm">Swarm</option>
@@ -283,6 +293,11 @@ body.ui-hidden.interactive .showbtn{display:grid}
           <select id="fxsel-laser" aria-label="Laser dials" hidden></select>
           <select id="fxsel-weave" aria-label="Sound Weaver dials" hidden></select>
           <select id="fxsel-box" aria-label="Music Box dials" hidden></select>
+          <select id="fxsel-tonnetz" aria-label="Harmony Lattice dials" hidden></select>
+          <select id="fxsel-terrain" aria-label="Sound Terrain dials" hidden></select>
+          <select id="fxsel-attract" aria-label="Attractor dials" hidden></select>
+          <select id="fxsel-cymatic" aria-label="Cymatics dials" hidden></select>
+          <select id="fxsel-memory" aria-label="Song Memory dials" hidden></select>
           <select id="fxsel-classic" aria-label="Classic part" hidden></select>
           <select id="fxsel-reactor" aria-label="Reactor component" hidden></select>
         </div>
@@ -385,6 +400,51 @@ body.ui-hidden.interactive .showbtn{display:grid}
           <button class="btn sm" data-mode-act="mutate">Mutate dials</button>
           <button class="btn sm" data-mode-act="reset">Reset dials</button>
         </div>
+      </section>
+      <section id="sec-tonnetz" hidden>
+        <h2>Harmony Lattice <small>drag to pan · scroll: zoom</small></h2>
+        <div class="panel" id="panel-tonnetz"></div>
+        <div class="row">
+          <button class="btn sm" data-mode-act="mutate">Mutate dials</button>
+          <button class="btn sm" data-mode-act="reset">Reset dials</button>
+        </div>
+        <p class="note">One step right is a perfect fifth, one step up a major third, so every triangle is a chord: up-triangles major, down-triangles minor. The notes playing light up and the view drifts toward the key.</p>
+      </section>
+      <section id="sec-cymatic" hidden>
+        <h2>Cymatics <small>tap: restrike · scroll: zoom</small></h2>
+        <div class="panel" id="panel-cymatic"></div>
+        <div class="row">
+          <button class="btn sm" data-mode-act="mutate">Mutate dials</button>
+          <button class="btn sm" data-mode-act="reset">Reset dials</button>
+        </div>
+        <p class="note">Sand on a vibrating plate gathers where the plate stands still. A mode’s pitch goes as √(n²+m²), so every note is matched to the standing wave whose pitch it is and a chord draws all of them at once.</p>
+      </section>
+      <section id="sec-terrain" hidden>
+        <h2>Sound Terrain <small>drag to look · scroll: height</small></h2>
+        <div class="panel" id="panel-terrain"></div>
+        <div class="row">
+          <button class="btn sm" data-mode-act="mutate">Mutate dials</button>
+          <button class="btn sm" data-mode-act="reset">Reset dials</button>
+        </div>
+        <p class="note">Each slice of the spectrum becomes one ridge and stays where it was cut, so the track builds its own landscape behind you. Cutting a slice in time with the beat lines the ridges up into bars.</p>
+      </section>
+      <section id="sec-attract" hidden>
+        <h2>Attractor <small>drag to turn · scroll: zoom · tap: restart</small></h2>
+        <div class="panel" id="panel-attract"></div>
+        <div class="row">
+          <button class="btn sm" data-mode-act="mutate">Mutate dials</button>
+          <button class="btn sm" data-mode-act="reset">Reset dials</button>
+        </div>
+        <p class="note">Bass, mid and highs are the constants in the equations, not a scale factor on the picture: the music decides which shape the system settles into, and every hit knocks the point onto a new path.</p>
+      </section>
+      <section id="sec-memory" hidden>
+        <h2>Song Memory <small>double-tap: forget</small></h2>
+        <div class="panel" id="panel-memory"></div>
+        <div class="row">
+          <button class="btn sm" data-mode-act="mutate">Mutate dials</button>
+          <button class="btn sm" data-mode-act="reset">Reset dials</button>
+        </div>
+        <p class="note">Every moment is compared with every moment held in memory. A repeated chorus draws a line parallel to the diagonal, a held section fills a block, and the curve underneath peaks where sections change.</p>
       </section>
       <section id="sec-deep" hidden>
         <h2>3D Worlds <small>drag to look · scroll to zoom</small></h2>
@@ -617,7 +677,7 @@ body.ui-hidden.interactive .showbtn{display:grid}
 const $ = s => document.querySelector(s);
 const clamp = (v,a,b) => v<a?a:v>b?b:v;
 const el = (tag, cls) => { const e = document.createElement(tag); if (cls) e.className = cls; return e; };
-const ENGINES = ['hyper','weave','box','deep','ink','swarm','mandala','laser','milk','avs','classic','reactor'];
+const ENGINES = ['hyper','weave','box','tonnetz','cymatic','terrain','attract','memory','deep','ink','swarm','mandala','laser','milk','avs','classic','reactor'];
 const WALL = /wallpaper/.test(location.hash);   // #wallpaper: no UI, driven by a host (Android live wallpaper, Lively, Wallpaper Engine, Cast receiver)
 
 /* ================= defaults ================= */
@@ -999,6 +1059,161 @@ MODE_DEF.box = {
   notes:{ sens:1, voices:4, glide:0.5, sustain:0.35, range:'wide' },
   motion:{ loop:12, tilt:0.38, sway:0.6, zoom:1, history:0.85 },
   look:{ width:1, glow:0.6, colors:'fifths', bars:0.45, sparkle:0.5, grid:0.35 }
+};
+/* ---------- v16: five visualizers that each take their shape from a different measurement of the music ---------- */
+// Harmony Lattice (which notes sound, and how they are related), Sound Terrain (the spectrum's own history),
+// Attractor (the band envelopes, as the parameters of a chaotic system), Cymatics (the pitch of every note, as
+// standing waves on a plate) and Song Memory (how much the last few seconds rhyme with everything before them).
+const NOTE_COLORS = [['fifths','By note: circle of fifths'],['chromatic','By note: rainbow'], ...PAL_OPTS];
+MODE_UI.tonnetz = {
+  notes: { label:'Notes & chords', desc:'The twelve notes laid out so that a fifth is one step right and a major third one step up: every triangle is a chord. The notes the music is playing light up, the lines between them show the intervals, and a triangle fills in when all three of its notes sound together, so chords appear as glowing plates.', controls:[
+    { t:'range', k:'sens', l:'Note sensitivity', min:0.3, max:3, step:0.05, tip:'How easily a sound counts as a note. Raise it for quiet or busy music, lower it if stray notes light up.' },
+    { t:'range', k:'voices', l:'Voices', min:1, max:6, step:1, tip:'How many notes can light up at once: 1 follows the strongest, 6 shows full chords.' },
+    { t:'range', k:'sustain', l:'Sustain', min:0.05, max:2, step:0.05, fmt:v=>v+' s', tip:'How long a note keeps glowing after it stops sounding.' },
+    { t:'range', k:'chords', l:'Chord plates', min:0, max:2, step:0.05, tip:'How strongly a triangle fills when its three notes sound together. Up-triangles are major chords, down-triangles minor.' },
+    { t:'range', k:'edges', l:'Interval lines', min:0, max:2, step:0.05, tip:'Lines lit between two sounding notes a fifth or a third apart.' },
+    { t:'range', k:'bassRing', l:'Bass root ring', min:0, max:2, step:0.05, tip:'A ring around the lowest note playing: usually the root of the chord.' },
+    { t:'check', k:'labels', l:'Note names', tip:'Writes C, G, D… on the lattice points.' } ] },
+  lattice: { label:'Lattice & drift', desc:'The size of the lattice, and how the view drifts toward whatever key the music is in. Drag to pan, scroll or pinch to zoom.', controls:[
+    { t:'range', k:'cell', l:'Lattice size', min:40, max:200, step:2, tip:'Distance between neighbouring notes, in pixels.' },
+    { t:'range', k:'drift', l:'Key drift', min:0, max:2, step:0.05, tip:'The view slides toward the key the music is in, worked out as the average of the notes around the circle of fifths. 0 holds still.' },
+    { t:'range', k:'rot', l:'Rotation', min:-1, max:1, step:0.01, tip:'Slowly turns the whole lattice. Negative turns the other way.' },
+    { t:'range', k:'pulse', l:'Beat pulse', min:0, max:2, step:0.05, tip:'The lattice breathes outward on every beat.' },
+    { t:'range', k:'wobble', l:'Treble wobble', min:0, max:2, step:0.05, tip:'Highs shiver the lattice points off their places.' },
+    { t:'range', k:'zoom', l:'Zoom', min:0.4, max:2.5, step:0.01, tip:'Size on screen. Scroll or pinch does the same.' } ] },
+  look: { label:'Look', desc:'Colours, glow and how long lit notes leave a trace.', controls:[
+    { t:'select', k:'colors', l:'Colours', o:NOTE_COLORS, tip:'Circle of fifths gives notes that sound good together neighbouring colours; rainbow runs C to B around the colour wheel; the palettes spread the twelve notes across a palette.' },
+    { t:'range', k:'dot', l:'Note size', min:0.3, max:3, step:0.05, tip:'Size of every lattice point.' },
+    { t:'range', k:'width', l:'Line width', min:0.3, max:3, step:0.05, tip:'Thickness of the interval lines.' },
+    { t:'range', k:'glow', l:'Glow', min:0, max:1, step:0.01, tip:'Soft light around lit notes and chords.' },
+    { t:'range', k:'trail', l:'Trails', min:0, max:0.95, step:0.01, tip:'Each frame leaves a fading copy, so chord changes smear into each other.' },
+    { t:'range', k:'dim', l:'Silent notes', min:0, max:0.5, step:0.01, tip:'How visible the notes that are not sounding are, so you can see the lattice in quiet parts.' },
+    { t:'range', k:'hueSpeed', l:'Hue drift', min:0, max:90, step:1, fmt:v=>v+'°/s', tip:'How fast the colours cycle.' } ] }
+};
+MODE_DEF.tonnetz = {
+  notes:{ sens:1, voices:4, sustain:0.6, chords:1, edges:1, bassRing:1, labels:true },
+  lattice:{ cell:96, drift:1, rot:0.04, pulse:0.6, wobble:0.4, zoom:1 },
+  look:{ colors:'fifths', dot:1, width:1, glow:0.6, trail:0.45, dim:0.12, hueSpeed:0 }
+};
+MODE_UI.terrain = {
+  terrain: { label:'Terrain', desc:'The spectrum is not a row of bars here, it is a landscape: every slice of the music becomes one ridge of a hill range, and you fly over the ones that came before. Bass is the near edge, treble the far one, loudness is height. Drag to look around, scroll or pinch to change height.', controls:[
+    { t:'range', k:'cols', l:'Detail', min:24, max:192, step:4, tip:'Points across each ridge, from bass to treble.' },
+    { t:'range', k:'rows', l:'Depth', min:24, max:200, step:4, tip:'How many slices of the past stay on screen.' },
+    { t:'range', k:'height', l:'Height', min:0.1, max:3, step:0.05, tip:'How tall the loud parts stand up.' },
+    { t:'select', k:'sync', l:'New ridge every', o:[['off','Fixed rate (Speed below)'],['4','Quarter of a beat'],['2','Half a beat'],['1','Beat'],['0.5','Two beats']], tip:'Cutting a new slice in time with the beat lines the ridges up into bars, so the rhythm shows as regular ranges in the landscape.' },
+    { t:'range', k:'speed', l:'Speed', min:2, max:60, step:1, fmt:v=>v+'/s', tip:'Slices per second, when New ridge every is set to a fixed rate.' },
+    { t:'range', k:'smooth', l:'Smoothing', min:0, max:0.95, step:0.01, tip:'Softens each ridge along its length.' },
+    { t:'check', k:'mirror', l:'Mirror the spectrum', tip:'Bass in the middle, treble to both sides, so the range is symmetrical.' } ] },
+  music: { label:'Music', desc:'What the music carves into the landscape.', controls:[
+    { t:'range', k:'crest', l:'Onset crests', min:0, max:2, step:0.05, tip:'A slice where the sound suddenly rises (a hit, a chord change) is lit along its crest, so onsets stay visible in the distance.' },
+    { t:'range', k:'kick', l:'Kick ridges', min:0, max:2, step:0.05, tip:'Every kick throws up a sharp ridge across the whole range.' },
+    { t:'range', k:'hat', l:'Hat sparkle', min:0, max:2, step:0.05, tip:'Hats scatter bright points over the far end of the landscape.' },
+    { t:'range', k:'bend', l:'Bass bend', min:0, max:2, step:0.05, tip:'The bass rolls the landscape, as if the hills were breathing.' },
+    { t:'range', k:'sway', l:'Sway', min:0, max:2, step:0.05, tip:'The view drifts from side to side as you fly.' } ] },
+  look: { label:'Look', desc:'Lines, fill, fog and colours.', controls:[
+    { t:'select', k:'style', l:'Draw as', o:[['both','Lit ridges'],['line','Wireframe'],['fill','Solid hills'],['peaks','Peaks only']], tip:'How each ridge is drawn.' },
+    { t:'select', k:'colorBy', l:'Colour by', o:[['freq','Frequency'],['height','Height'],['age','Distance']], tip:'What decides the colour along each ridge.' },
+    { t:'select', k:'pal', l:'Colour scheme', o:PAL_OPTS, tip:'The palette.' },
+    { t:'range', k:'width', l:'Line width', min:0.3, max:3, step:0.05, tip:'Thickness of the ridge lines.' },
+    { t:'range', k:'glow', l:'Glow', min:0, max:1, step:0.01, tip:'Soft light along the ridges.' },
+    { t:'range', k:'fog', l:'Fog', min:0, max:1, step:0.01, tip:'How quickly distant ridges fade into the dark.' },
+    { t:'range', k:'tilt', l:'Eye height', min:0, max:1, step:0.01, tip:'How far above the landscape you fly.' },
+    { t:'range', k:'hueSpeed', l:'Hue drift', min:0, max:90, step:1, fmt:v=>v+'°/s', tip:'How fast the colours cycle.' } ] }
+};
+MODE_DEF.terrain = {
+  terrain:{ cols:96, rows:96, height:1, sync:'4', speed:24, smooth:0.35, mirror:false },
+  music:{ crest:1, kick:0.8, hat:0.6, bend:0.6, sway:0.6 },
+  look:{ style:'both', colorBy:'freq', pal:'aurora', width:1, glow:0.5, fog:0.55, tilt:0.45, hueSpeed:4 }
+};
+MODE_UI.attract = {
+  system: { label:'System', desc:'A chaotic system drawn one step at a time. The music is not decorating it: bass, mid and treble are the constants in its equations, so the music decides which shape the system settles into, and every hit knocks the point off its orbit. Drag to turn it, scroll or pinch to zoom.', controls:[
+    { t:'select', k:'sys', l:'Equations', o:[['lorenz','Lorenz'],['rossler','Rössler'],['thomas','Thomas'],['aizawa','Aizawa'],['halvorsen','Halvorsen'],['dejong','De Jong (flat)'],['clifford','Clifford (flat)']], tip:'Which set of equations runs. The three-dimensional ones can be turned; the flat ones are maps drawn face on.' },
+    { t:'range', k:'steps', l:'Steps per frame', min:200, max:6000, step:100, tip:'How much of the orbit is drawn each frame. Fewer runs faster on older machines.' },
+    { t:'range', k:'dt', l:'Step size', min:0.1, max:3, step:0.05, tip:'How far the point moves per step. Large steps stretch the orbit into long strokes.' },
+    { t:'range', k:'bassP', l:'Bass drives', min:0, max:2, step:0.05, tip:'How much the bass pushes the first constant of the equations. This is what makes the whole shape change with the music.' },
+    { t:'range', k:'midP', l:'Mid drives', min:0, max:2, step:0.05, tip:'How much the mids push the second constant.' },
+    { t:'range', k:'trebP', l:'High drives', min:0, max:2, step:0.05, tip:'How much the highs push the third constant.' },
+    { t:'range', k:'kick', l:'Hits knock it', min:0, max:2, step:0.05, tip:'Every kick and snare shoves the point somewhere else on the attractor, so beats show as jumps in the thread.' },
+    { t:'range', k:'jitter', l:'High jitter', min:0, max:2, step:0.05, tip:'Highs shake each step a little.' } ] },
+  view: { label:'View', desc:'How the attractor is turned and framed.', controls:[
+    { t:'range', k:'spinX', l:'Spin X', min:-2, max:2, step:0.01, tip:'Automatic tumbling around the horizontal axis.' },
+    { t:'range', k:'spinY', l:'Spin Y', min:-2, max:2, step:0.01, tip:'Automatic turning around the vertical axis.' },
+    { t:'range', k:'beatSpin', l:'Beat spin', min:0, max:2, step:0.05, tip:'Beats give the view a shove.' },
+    { t:'range', k:'zoom', l:'Zoom', min:0.3, max:3, step:0.01, tip:'Size on screen. Scroll or pinch does the same.' },
+    { t:'range', k:'persp', l:'Perspective', min:0, max:1, step:0.01, tip:'0 looks at it flat on, 1 is a full perspective view.' },
+    { t:'check', k:'center', l:'Keep it centred', tip:'Follows the drifting middle of the orbit, so it cannot wander off screen when the music changes the equations.' } ] },
+  look: { label:'Look', desc:'The thread itself: width, afterglow and colours.', controls:[
+    { t:'select', k:'draw', l:'Draw as', o:[['line','Thread'],['dots','Dust'],['both','Thread and dust']], tip:'A continuous thread through the orbit, or a cloud of points.' },
+    { t:'range', k:'size', l:'Width', min:0.2, max:4, step:0.05, tip:'Thickness of the thread, or size of the dust.' },
+    { t:'range', k:'persist', l:'Afterglow', min:0, max:0.98, step:0.01, tip:'How long the drawn orbit stays on screen.' },
+    { t:'select', k:'colorBy', l:'Colour by', o:[['speed','Speed'],['depth','Depth'],['age','Age'],['band','Loudest band']], tip:'What decides the colour along the orbit.' },
+    { t:'select', k:'pal', l:'Colour scheme', o:PAL_OPTS, tip:'The palette.' },
+    { t:'range', k:'glow', l:'Glow', min:0, max:1, step:0.01, tip:'Haze around the thread.' },
+    { t:'range', k:'hueSpeed', l:'Hue drift', min:0, max:120, step:1, fmt:v=>v+'°/s', tip:'How fast the colours cycle.' } ] }
+};
+MODE_DEF.attract = {
+  system:{ sys:'lorenz', steps:2200, dt:1, bassP:1, midP:1, trebP:1, kick:1, jitter:0.4 },
+  view:{ spinX:0.1, spinY:0.3, beatSpin:0.5, zoom:1, persp:0.6, center:true },
+  look:{ draw:'line', size:1, persist:0.86, colorBy:'speed', pal:'ember', glow:0.6, hueSpeed:8 }
+};
+MODE_UI.cymatic = {
+  plate: { label:'Plate', desc:'A metal plate with sand on it, played by the music. Every note sounding becomes one standing wave on the plate, and the sand gathers where the plate does not move: the figure you see is the shape of the notes themselves, so a chord draws a different plate from a single note.', controls:[
+    { t:'select', k:'edge', l:'Plate', o:[['square','Square plate (classic Chladni)'],['free','Free edges'],['drum','Clamped drum']], tip:'Which standing waves the plate can hold. The square plate is the classic Chladni figure, clamped at the middle; a clamped drum gives smoother grids.' },
+    { t:'range', k:'modes', l:'Notes at once', min:1, max:8, step:1, tip:'How many sounding notes get their own standing wave. More notes make busier sand.' },
+    { t:'range', k:'sens', l:'Note sensitivity', min:0.3, max:3, step:0.05, tip:'How easily a sound counts as a note.' },
+    { t:'range', k:'spread', l:'Pitch spread', min:2, max:12, step:1, tip:'How many semitones it takes to move the figure one step up: small values give a new figure for every note, large ones change it only between octaves.' },
+    { t:'range', k:'base', l:'Lowest note', min:24, max:60, step:1, tip:'The note the simplest figure belongs to. Raise it if the plate is always busy.' },
+    { t:'range', k:'decay', l:'Sustain', min:0.05, max:3, step:0.05, fmt:v=>v+' s', tip:'How long a note keeps ringing on the plate after it stops.' },
+    { t:'range', k:'rate', l:'Ring speed', min:0, max:3, step:0.05, tip:'How fast each wave oscillates. Higher notes always ring faster than low ones; this sets the overall speed.' } ] },
+  music: { label:'Music', desc:'What the rest of the music does to the plate and the sand.', controls:[
+    { t:'range', k:'bass', l:'Bass drives it', min:0, max:2, step:0.05, tip:'The bass sets how hard the plate is played, so the sand gathers more sharply when it is loud.' },
+    { t:'range', k:'shake', l:'Onset shake', min:0, max:2, step:0.05, tip:'Sudden sounds jolt the whole plate.' },
+    { t:'range', k:'flash', l:'Beat flash', min:0, max:2, step:0.05, tip:'Every beat lights the sand up for a moment.' },
+    { t:'range', k:'grain', l:'High grain', min:0, max:2, step:0.05, tip:'Highs scatter fine grain across the plate.' },
+    { t:'range', k:'warp', l:'Beat warp', min:0, max:2, step:0.05, tip:'Beats squeeze the plate in and out of square.' } ] },
+  look: { label:'Look', desc:'Sand, plate and colours.', controls:[
+    { t:'range', k:'width', l:'Sand width', min:0.02, max:0.5, step:0.005, fmt:v=>v.toFixed(3), tip:'How wide the lines of sand are.' },
+    { t:'range', k:'sharp', l:'Sharpness', min:0.2, max:4, step:0.05, tip:'How hard the edge of each line is.' },
+    { t:'range', k:'plate', l:'Plate shading', min:0, max:1, step:0.01, tip:'How much of the moving plate shows between the lines of sand.' },
+    { t:'range', k:'glow', l:'Glow', min:0, max:1, step:0.01, tip:'Soft light on the sand.' },
+    { t:'select', k:'pal', l:'Colour scheme', o:PAL_OPTS, tip:'The palette.' },
+    { t:'range', k:'hueSpeed', l:'Hue drift', min:0, max:90, step:1, fmt:v=>v+'°/s', tip:'How fast the colours cycle.' },
+    { t:'range', k:'zoom', l:'Zoom', min:0.5, max:2.5, step:0.01, tip:'Size of the plate on screen.' },
+    { t:'range', k:'spin', l:'Spin', min:-1, max:1, step:0.01, tip:'Slowly turns the plate.' } ] }
+};
+MODE_DEF.cymatic = {
+  plate:{ edge:'square', modes:4, sens:1, spread:4, base:36, decay:0.8, rate:1 },
+  music:{ bass:1, shake:0.6, flash:0.8, grain:0.5, warp:0.4 },
+  look:{ width:0.12, sharp:1.4, plate:0.35, glow:0.5, pal:'ice', hueSpeed:5, zoom:1, spin:0.02 }
+};
+MODE_UI.memory = {
+  memory: { label:'Memory', desc:'Every moment of the music is compared with every moment before it. Where two moments sound alike the picture lights up, so a repeated chorus draws a bright line parallel to the diagonal and a held section fills a block: what you are looking at is the shape of the whole piece, drawn as it plays.', controls:[
+    { t:'select', k:'view', l:'Draw as', o:[['matrix','Map (every moment against every moment)'],['arcs','Arcs (moments joined in a circle)']], tip:'The map is the classic self-similarity picture; the arcs wrap time around a circle and join the moments that rhyme.' },
+    { t:'range', k:'window', l:'Remembers', min:10, max:240, step:5, fmt:v=>v+' s', tip:'How much of the music is kept. Long windows show whole songs, short ones show the last few bars in detail.' },
+    { t:'select', k:'feature', l:'Listens to', o:[['harmony','Harmony (which notes)'],['timbre','Timbre (how it sounds)'],['both','Both']], tip:'Harmony catches repeated chords and melodies; timbre catches a change of instrument, drop or texture.' },
+    { t:'range', k:'rate', l:'Moments / s', min:2, max:20, step:1, tip:'How finely time is cut up. Higher is more detailed and heavier.' },
+    { t:'range', k:'contrast', l:'Contrast', min:0.5, max:6, step:0.05, tip:'How strongly a small likeness already shows.' },
+    { t:'range', k:'thresh', l:'Threshold', min:0, max:0.95, step:0.01, tip:'Likeness below this is left dark. Raise it to keep only the clear repeats.' },
+    { t:'range', k:'enhance', l:'Trace repeats', min:0, max:1, step:0.01, tip:'Smooths along the diagonal, which turns a dotted repeat into one clean line.' },
+    { t:'btn', l:'Forget everything', act:'memoryClear', tip:'Empties the memory and starts again.' } ] },
+  marks: { label:'Marks', desc:'What is drawn on top of the memory.', controls:[
+    { t:'range', k:'novelty', l:'Section edges', min:0, max:2, step:0.05, tip:'A curve that peaks where the music changes character, worked out by sliding a checkerboard along the diagonal. Peaks are where a new section starts.' },
+    { t:'range', k:'flash', l:'Edge flash', min:0, max:2, step:0.05, tip:'The picture flares when a section edge goes past.' },
+    { t:'range', k:'head', l:'Playhead', min:0, max:1, step:0.01, tip:'The cross marking where in the memory the music is now.' },
+    { t:'range', k:'beats', l:'Beat grid', min:0, max:1, step:0.01, tip:'Faint marks on the beat, so you can count bars across the picture.' },
+    { t:'check', k:'spin', l:'Turn the circle with the beat', tip:'Arcs view only: the circle turns one notch per beat instead of drifting.' } ] },
+  look: { label:'Look', desc:'Colours and glow.', controls:[
+    { t:'select', k:'pal', l:'Colour scheme', o:PAL_OPTS, tip:'The palette.' },
+    { t:'range', k:'hueSpeed', l:'Hue drift', min:0, max:90, step:1, fmt:v=>v+'°/s', tip:'How fast the colours cycle.' },
+    { t:'range', k:'glow', l:'Glow', min:0, max:1, step:0.01, tip:'Soft light over the bright parts.' },
+    { t:'range', k:'width', l:'Arc width', min:0.2, max:3, step:0.05, tip:'Thickness of the arcs in the Arcs view.' },
+    { t:'range', k:'zoom', l:'Zoom', min:0.5, max:1.6, step:0.01, tip:'How much of the stage the picture fills.' },
+    { t:'range', k:'floor', l:'Background', min:0, max:0.4, step:0.01, tip:'How visible the dark, unlike parts are.' } ] }
+};
+MODE_DEF.memory = {
+  memory:{ view:'matrix', window:90, feature:'both', rate:8, contrast:2.2, thresh:0.35, enhance:0.5 },
+  marks:{ novelty:1, flash:0.6, head:0.7, beats:0.3, spin:false },
+  look:{ pal:'nebula', hueSpeed:3, glow:0.45, width:1, zoom:1, floor:0.08 }
 };
 const MODE_KEYS = Object.keys(MODE_UI);
 
@@ -2095,6 +2310,8 @@ const UI = {
   milked: { effects: ME_UI },
   deep: { effects: D3_SCENES },
   swarm: { effects: MODE_UI.swarm }, ink: { effects: MODE_UI.ink }, mandala: { effects: MODE_UI.mandala }, laser: { effects: MODE_UI.laser }, weave: { effects: MODE_UI.weave }, box: { effects: MODE_UI.box },
+  tonnetz: { effects: MODE_UI.tonnetz }, terrain: { effects: MODE_UI.terrain }, attract: { effects: MODE_UI.attract },
+  cymatic: { effects: MODE_UI.cymatic }, memory: { effects: MODE_UI.memory },
   reactor: { effects: {
     feedback: { label:'Feedback', controls:[
       { t:'range', k:'trail', l:'Trail (decay)', min:0.70, max:0.985, step:0.005, fmt:v=>v.toFixed(3) },
@@ -2676,7 +2893,7 @@ function postFrame(dt){
 
 /* ================= new modes: Swarm · Ink · Mandala · Laser (and the stage pointer they share) ================= */
 // Every mode keeps playing by itself from the music; on top of that each one has its own way to play with it on the picture.
-const INTERACTIVE = new Set(['swarm', 'ink', 'mandala', 'laser', 'deep', 'weave', 'box']);
+const INTERACTIVE = new Set(['swarm', 'ink', 'mandala', 'laser', 'deep', 'weave', 'box', 'tonnetz', 'terrain', 'attract', 'cymatic', 'memory']);
 const TAU = Math.PI*2;
 let RGEN = 1;                                   // bumped by resize(); engines re-measure the stage when it changes
 const MODE_RT = {};                             // per engine: { down(x,y), move(x,y,dx,dy), up(), tap(x,y), dbl(x,y), wheel(d), pinch(f) }
@@ -3290,7 +3507,7 @@ MODE_RT.laser = {
   pinch(f){ const m = S.laser.fx.motion; setDial('laser', 'motion', 'zoom', +clamp(m.zoom*f, 0.4, 2.5).toFixed(2)); },
   dbl(){ laserRandom(); }
 };
-const MODE_ACT = { mandalaClear: mdClear };
+const MODE_ACT = { mandalaClear: mdClear, memoryClear: () => memoryClear() };
 
 /* ================= 3D Worlds (PC): ten raymarched scenes on the graphics card ================= */
 // Each scene is its own fragment shader (compiled the first time it's shown). The scene renders into a smaller buffer whose
@@ -4195,16 +4412,563 @@ MODE_RT.box = {
   dbl(){ BX.yaw = 0; BX.pitch = 0; flash('Music Box · view reset'); }
 };
 
+/* ================= v16: shared music maths for the five new visualizers =================
+   The engines below do not take a loudness and scale something by it. Each one hands a
+   different measurement of the music to a piece of mathematics and lets the mathematics
+   draw itself: which notes are sounding (Harmony Lattice), the spectrum's own history
+   (Sound Terrain), the band envelopes as the constants of a chaotic system (Attractor),
+   the pitch of every note as a standing wave (Cymatics), and how much the last few
+   seconds rhyme with everything before them (Song Memory). */
+const MX = { prev:new Float32Array(64), flux:0, fAvg:0, chroma:new Float32Array(12), notes:[], noteT:0, keyA:0, bassM:0, bassS:0 };
+const NOTE_NAMES = ['C','G','D','A','E','B','F♯','C♯','G♯','D♯','A♯','F'];     // in circle-of-fifths order, index = i steps of a fifth
+// Spectral flux: how much the spectrum rose since the last frame. Rises mark onsets — a hit, a
+// chord change, a new instrument — where a plain level meter shows nothing at all.
+function mxFlux(){
+  let f = 0; for (let i=0;i<64;i++){ const v = specTrue(i/64), d = v - MX.prev[i]; if (d > 0) f += d; MX.prev[i] = v; }
+  f /= 8; MX.fAvg = MX.fAvg*0.93 + f*0.07; MX.flux = clamp((f - MX.fAvg*1.15)*2.2, 0, 2); return MX.flux;
+}
+// The notes sounding now, folded into a 12-note chroma that decays smoothly, plus the key centre:
+// the circular mean of the chroma around the circle of fifths, which is where a key signature lives.
+function mxNotes(maxN, sens, now, sustain, sec){
+  const k = Math.exp(-sec/Math.max(0.05, sustain)); for (let i=0;i<12;i++) MX.chroma[i] *= k;
+  if (ptInit() && now - MX.noteT > 32){
+    MX.noteT = now; MX.notes = ptDetect(maxN, sens);
+    let lo = 999, ls = 0;
+    for (const n of MX.notes){ const pc = ((n.m % 12) + 12) % 12; if (n.s > MX.chroma[pc]) MX.chroma[pc] = n.s; if (n.m < lo){ lo = n.m; ls = n.s; } }
+    if (lo < 999){ MX.bassM = lo; MX.bassS = ls; } else MX.bassS *= 0.92;
+  }
+  let sx = 0, sy = 0, tot = 0;
+  for (let p=0;p<12;p++){ const a = ((p*7) % 12)/12*TAU, w = MX.chroma[p]; sx += Math.cos(a)*w; sy += Math.sin(a)*w; tot += w; }
+  if (tot > 0.05){ const a = Math.atan2(sy, sx); let d = a - MX.keyA; while (d > Math.PI) d -= TAU; while (d < -Math.PI) d += TAU; MX.keyA += d*Math.min(1, sec*1.2); }
+  return MX.notes;
+}
+// Where we are between two beats, 0 → 1, from the detected tempo. -1 when no tempo is locked yet.
+function mxBeatPhase(now){ const p = TEMPO.period; if (!p || now - TEMPO.lastHit > 4000) return -1; return (((now - TEMPO.anchor)/p) % 1 + 1) % 1; }
+function mxSize(st, cap){
+  const r = stageRect(), d0 = Math.min(window.devicePixelRatio || 1, 1.5), lim = cap || (PC_CLASS ? 2200 : 1500);
+  const d = d0*Math.min(1, lim/Math.max(1, Math.hypot(r.w*d0, r.h*d0)));
+  const W = Math.max(16, Math.round(r.w*d)), H = Math.max(16, Math.round(r.h*d));
+  st.px = W/Math.max(1, r.w);
+  if (W === st.W && H === st.H) return false;
+  st.cv.width = W; st.cv.height = H; st.W = W; st.H = H; return true;
+}
+const mxCol = (pal, t, a) => { const c = palRGB(pal, t); return 'rgba(' + (c[0]*255|0) + ',' + (c[1]*255|0) + ',' + (c[2]*255|0) + ',' + a + ')'; };
+// A note's colour: the circle of fifths puts notes that sound good together side by side.
+function mxNoteCol(pc, L, v){
+  const c = L.colors === 'fifths' ? hsvRGB(((pc*7) % 12)/12, 0.72, v) : L.colors === 'chromatic' ? hsvRGB(pc/12, 0.72, v) : palRGB(L.colors, pc/12).map(x => x*v);
+  return [c[0]*255|0, c[1]*255|0, c[2]*255|0];
+}
+
+/* ================= Harmony Lattice: the Tonnetz, lit by the notes that are playing =================
+   Euler's lattice: one step right is a perfect fifth, one step up a major third. Because of that,
+   every small triangle is a triad — pointing up for major, down for minor — so chords are not
+   worked out and labelled, they simply light up as shapes. The view drifts toward the key. */
+const TZ = { ok:false, cv:$('#tonnetz'), ctx:null, W:0, H:0, px:1, hue:0, rot:0, panX:0, panY:0, drag:false, pb:0, pulse:0 };
+function initTonnetz(){ if (TZ.ok) return true; TZ.ctx = TZ.cv.getContext('2d'); TZ.ok = !!TZ.ctx; return TZ.ok; }
+function renderTonnetz(now, dt){
+  if (!TZ.ok) return; mxSize(TZ);
+  const F = S.tonnetz.fx, N = F.notes, La = F.lattice, L = F.look, g = TZ.ctx, W = TZ.W, H = TZ.H, px = TZ.px, sec = Math.min(0.08, dt/60);
+  TZ.hue = (TZ.hue + L.hueSpeed/360*sec) % 1; TZ.rot += La.rot*0.25*sec*(1 + A.mid*0.4);
+  mxNotes(clamp(N.voices|0, 1, 6) + 2, N.sens, now, N.sustain, sec);
+  const hit = beatEdge(TZ); TZ.pulse = Math.max(TZ.pulse*Math.pow(0.9, dt), hit);
+  // the trail layer: chord changes smear into each other instead of snapping
+  g.globalCompositeOperation = 'source-over'; g.fillStyle = 'rgba(7,8,12,' + (1 - L.trail*0.92).toFixed(3) + ')'; g.fillRect(0, 0, W, H);
+  g.globalCompositeOperation = 'lighter';
+  const cell = La.cell*px*La.zoom*(1 + La.pulse*TZ.pulse*0.05), ch = cell*0.866;
+  const kf = MX.keyA/TAU*12;                                                   // the key, as a position along the fifths axis
+  const camX = La.drift*kf*cell + TZ.panX*px, camY = TZ.panY*px;
+  const cx = W/2, cy = H/2, co = Math.cos(TZ.rot), si = Math.sin(TZ.rot);
+  const wob = La.wobble*A.treb*cell*0.05;
+  const P = (i, j) => {                                                        // lattice point → screen
+    let x = (i + j*0.5)*cell - camX, y = -j*ch - camY;
+    if (wob > 0.01){ const s = Math.sin(i*2.1 + j*1.7 + now*0.004); x += s*wob; y += Math.cos(i*1.3 - j*2.3 + now*0.0035)*wob; }
+    return [cx + x*co - y*si, cy + x*si + y*co];
+  };
+  const act = p => Math.min(1.4, MX.chroma[((p % 12) + 12) % 12]);
+  const span = Math.hypot(W, H)/Math.min(cell, ch) + 2, j0 = Math.round(camY/ch) - Math.ceil(span/2), i0 = Math.round(camX/cell) - Math.ceil(span/2);
+  const jN = Math.min(26, Math.ceil(span)), iN = Math.min(34, Math.ceil(span) + 2), lw = Math.max(0.8, L.width*1.6*px), dim = L.dim;
+  // chord plates: a triangle fills when all three of its notes sound, up = major, down = minor
+  if (N.chords > 0.01) for (let jj=0;jj<jN;jj++) for (let ii=0;ii<iN;ii++){
+    const i = i0 + ii, j = j0 + jj, p = (i*7 + j*4);
+    const a0 = act(p), a1 = act(p + 7), a2 = act(p + 4), a3 = act(p + 11);
+    const up = Math.min(a0, a1, a2), dn = Math.min(a1, a2, a3);
+    if (up > 0.08){ const q0 = P(i, j), q1 = P(i + 1, j), q2 = P(i, j + 1), c = mxNoteCol(((p % 12) + 12) % 12, L, 1);
+      g.fillStyle = 'rgba(' + c.join(',') + ',' + (up*up*0.3*N.chords).toFixed(3) + ')';
+      g.beginPath(); g.moveTo(q0[0], q0[1]); g.lineTo(q1[0], q1[1]); g.lineTo(q2[0], q2[1]); g.closePath(); g.fill(); }
+    if (dn > 0.08){ const q0 = P(i + 1, j), q1 = P(i, j + 1), q2 = P(i + 1, j + 1), c = mxNoteCol((((p + 4) % 12) + 12) % 12, L, 0.8);
+      g.fillStyle = 'rgba(' + c.join(',') + ',' + (dn*dn*0.22*N.chords).toFixed(3) + ')';
+      g.beginPath(); g.moveTo(q0[0], q0[1]); g.lineTo(q1[0], q1[1]); g.lineTo(q2[0], q2[1]); g.closePath(); g.fill(); }
+  }
+  // interval lines: the three sides of every triangle, lit when both of their notes sound
+  if (N.edges > 0.01){
+    g.lineCap = 'round';
+    const edge = (q0, q1, s, pc) => {
+      if (s < 0.06) return; const c = mxNoteCol(pc, L, 1);
+      g.strokeStyle = 'rgba(' + c.join(',') + ',' + (s*0.75*N.edges).toFixed(3) + ')'; g.lineWidth = lw*(0.5 + s);
+      g.beginPath(); g.moveTo(q0[0], q0[1]); g.lineTo(q1[0], q1[1]); g.stroke();
+    };
+    for (let jj=0;jj<jN;jj++) for (let ii=0;ii<iN;ii++){
+      const i = i0 + ii, j = j0 + jj, p = (i*7 + j*4), pc = ((p % 12) + 12) % 12;
+      const a0 = act(p), a5 = act(p + 7), a3 = act(p + 4);
+      const q00 = P(i, j), q10 = P(i + 1, j), q01 = P(i, j + 1);
+      edge(q00, q10, Math.min(a0, a5), pc);                                    // a perfect fifth
+      edge(q00, q01, Math.min(a0, a3), (pc + 4) % 12);                         // a major third
+      edge(q10, q01, Math.min(a5, a3), (pc + 7) % 12);                         // a minor third
+    }
+  }
+  // the notes themselves
+  const r0 = cell*0.07*L.dot, bassPc = MX.bassS > 0.05 ? ((MX.bassM % 12) + 12) % 12 : -1;
+  g.font = Math.max(9, Math.round(cell*0.17)) + 'px ' + 'IBM Plex Mono, monospace'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  for (let jj=0;jj<jN;jj++) for (let ii=0;ii<iN;ii++){
+    const i = i0 + ii, j = j0 + jj, p = (i*7 + j*4), pc = ((p % 12) + 12) % 12, a = act(p), q = P(i, j);
+    if (q[0] < -cell || q[0] > W + cell || q[1] < -cell || q[1] > H + cell) continue;
+    const v = dim + a*(1 - dim), c = mxNoteCol(pc, L, Math.min(1, 0.55 + a*0.45));
+    if (a > 0.05 && L.glow > 0.01){ const r = r0*(2.6 + a*3.4), gr = g.createRadialGradient(q[0], q[1], 0, q[0], q[1], r);
+      gr.addColorStop(0, 'rgba(' + c.join(',') + ',' + (a*0.5*L.glow).toFixed(3) + ')'); gr.addColorStop(1, 'rgba(' + c.join(',') + ',0)');
+      g.fillStyle = gr; g.fillRect(q[0] - r, q[1] - r, r*2, r*2); }
+    g.fillStyle = 'rgba(' + c.join(',') + ',' + Math.min(1, v).toFixed(3) + ')';
+    g.beginPath(); g.arc(q[0], q[1], r0*(0.7 + a*1.5), 0, TAU); g.fill();
+    if (pc === bassPc && N.bassRing > 0.01){ g.strokeStyle = 'rgba(255,255,255,' + (0.5*N.bassRing*MX.bassS).toFixed(3) + ')'; g.lineWidth = lw;
+      g.beginPath(); g.arc(q[0], q[1], r0*(3 + MX.bassS*2), 0, TAU); g.stroke(); }
+    if (N.labels && cell > 46){ g.fillStyle = 'rgba(233,236,244,' + (0.2 + a*0.7).toFixed(3) + ')'; g.fillText(NOTE_NAMES[(pc*7) % 12], q[0], q[1] - r0*2.4); }
+  }
+  g.globalCompositeOperation = 'source-over';
+}
+MODE_RT.tonnetz = {
+  down(){ TZ.drag = true; }, up(){ TZ.drag = false; },
+  move(x, y, dx, dy){ TZ.panX -= dx; TZ.panY -= dy; },
+  wheel(d){ setDial('tonnetz', 'lattice', 'zoom', +clamp(S.tonnetz.fx.lattice.zoom*Math.exp(-d*0.0012), 0.4, 2.5).toFixed(2)); },
+  pinch(f){ setDial('tonnetz', 'lattice', 'zoom', +clamp(S.tonnetz.fx.lattice.zoom*f, 0.4, 2.5).toFixed(2)); },
+  dbl(){ TZ.panX = 0; TZ.panY = 0; flash('Harmony Lattice · view reset'); }
+};
+
+/* ================= Sound Terrain: the spectrum's own history, flown over =================
+   Every slice of the spectrum becomes one ridge of a landscape and stays where it was cut, so the
+   piece builds its own terrain behind you: bass near, treble far, loudness as height. Cutting a new
+   slice in time with the beat (the default) lines the ridges up into bars. */
+const TR = { ok:false, cv:$('#terrain'), ctx:null, W:0, H:0, px:1, rows:[], acc:0, hue:0, yaw:0, pitch:0, drag:false, pb:0, cols:0, t:0, smoothed:null };
+function initTerrain(){ if (TR.ok) return true; TR.ctx = TR.cv.getContext('2d'); TR.ok = !!TR.ctx; return TR.ok; }
+function trCut(cols, F, M, kick){
+  const h = new Float32Array(cols), sm = F.smooth;
+  for (let c=0;c<cols;c++){
+    const u = F.mirror ? Math.abs(c/(cols - 1)*2 - 1) : c/(cols - 1);
+    let v = specAt(F.mirror ? 1 - u : u);
+    h[c] = v;
+  }
+  if (sm > 0.01){ const o = Float32Array.from(h), k = sm*0.5; for (let c=1;c<cols-1;c++) h[c] = o[c]*(1 - k) + (o[c-1] + o[c+1])*k*0.5; }
+  if (kick > 0) for (let c=0;c<cols;c++) h[c] += kick*M.kick*0.5;
+  TR.rows.unshift({ h, crest:MX.flux, t:TR.t, kick });
+}
+function renderTerrain(now, dt){
+  if (!TR.ok) return; mxSize(TR);
+  const F = S.terrain.fx, T = F.terrain, M = F.music, L = F.look, g = TR.ctx, W = TR.W, H = TR.H, px = TR.px, sec = Math.min(0.08, dt/60);
+  TR.t += sec; TR.hue = (TR.hue + L.hueSpeed/360*sec) % 1; mxFlux();
+  const cols = clamp(T.cols|0, 8, 192), rows = clamp(T.rows|0, 8, 200);
+  if (cols !== TR.cols){ TR.cols = cols; TR.rows.length = 0; }
+  // one new ridge per fraction of a beat, or at a fixed rate: the music decides where the geometry is sampled
+  const per = TEMPO.period, iv = (T.sync !== 'off' && per) ? (per/1000)/Math.max(0.25, +T.sync) : 1/Math.max(1, T.speed);
+  const kick = bandHit(0);
+  TR.acc += sec; let cut = 0;
+  while (TR.acc >= iv && cut < 4){ TR.acc -= iv; trCut(cols, T, M, cut === 0 ? kick : 0); cut++; }
+  if (cut === 0 && kick > 0.25 && M.kick > 0.01 && TR.rows.length) TR.rows[0].kick = Math.max(TR.rows[0].kick, kick);
+  while (TR.rows.length > rows) TR.rows.pop();
+  if (!TR.drag){ const k = Math.exp(-sec/6); TR.yaw *= k; TR.pitch *= k; }
+  g.globalCompositeOperation = 'source-over'; g.fillStyle = '#07080c'; g.fillRect(0, 0, W, H);
+  const f = Math.min(W, H)*0.95, zN = 1, zF = 6, eye = 0.35 + L.tilt*1.5 + TR.pitch*0.004;
+  const sway = M.sway*0.22*Math.sin(TR.t*0.21) + TR.yaw*0.004, roll = M.bend*A.bass*0.5;
+  const hs = T.height*Math.min(W, H)/900*1.3, cx = W/2, cy = H*0.32, wide = W/f*0.62;
+  const lw = Math.max(0.7, L.width*1.5*px), style = L.style, fill = style === 'fill' || style === 'both';
+  g.lineCap = 'round'; g.lineJoin = 'round';
+  // far to near, so nearer ridges cover the ones behind them
+  for (let r=TR.rows.length-1;r>=0;r--){
+    const row = TR.rows[r], d = r/Math.max(1, rows - 1), z = zN + d*(zF - zN), fog = Math.pow(1 - d, 0.6 + L.fog*2.2);
+    if (fog < 0.012) continue;
+    const sc = f/z, xs = wide*sc, yBase = cy + eye*sc*0.7;
+    const path = new Path2D(); let peak = 0, pkx = 0, pky = 0;
+    for (let c=0;c<cols;c++){
+      const u = c/(cols - 1), xw = (u*2 - 1) + sway*d;
+      let hv = row.h[c]; if (roll > 0.001) hv += roll*0.12*Math.sin(xw*3.1 + TR.t*1.7 - d*2.2);
+      const x = cx + xw*xs, y = yBase - hv*hs*sc*0.33;
+      if (hv > peak){ peak = hv; pkx = x; pky = y; }
+      c ? path.lineTo(x, y) : path.moveTo(x, y);
+    }
+    const t0 = L.colorBy === 'age' ? TR.hue + d*0.6 : L.colorBy === 'height' ? TR.hue + Math.min(0.8, peak*0.7) : TR.hue;
+    if (fill){ const p2 = new Path2D(path); p2.lineTo(cx + (1 + sway*d)*xs, H); p2.lineTo(cx + (-1 + sway*d)*xs, H); p2.closePath();
+      g.globalCompositeOperation = 'source-over'; g.fillStyle = mxCol(L.pal, t0 + 0.08, (0.82*fog).toFixed(3)); g.fill(p2); }
+    if (style !== 'peaks'){
+      g.globalCompositeOperation = 'lighter';
+      const lit = fog*(0.35 + Math.min(1, peak)*0.5 + row.crest*M.crest*0.5 + row.kick*M.kick*0.6);
+      if (L.colorBy === 'freq'){ const gr = g.createLinearGradient(cx - xs, 0, cx + xs, 0);
+        for (let k=0;k<=4;k++) gr.addColorStop(k/4, mxCol(L.pal, TR.hue + (T.mirror ? Math.abs(k/4*2 - 1) : k/4)*0.55, Math.min(1, lit).toFixed(3)));
+        g.strokeStyle = gr; } else g.strokeStyle = mxCol(L.pal, t0, Math.min(1, lit).toFixed(3));
+      if (L.glow > 0.01 && d < 0.5){ g.lineWidth = lw*4; g.globalAlpha = L.glow*0.22*fog; g.stroke(path); g.globalAlpha = 1; }
+      g.lineWidth = lw*(0.5 + fog*0.8); g.stroke(path);
+    }
+    if (style === 'peaks' || (row.kick > 0.2 && M.kick > 0.01)){
+      g.globalCompositeOperation = 'lighter'; g.fillStyle = mxCol(L.pal, t0 + 0.3, Math.min(1, fog*(0.5 + peak)).toFixed(3));
+      g.beginPath(); g.arc(pkx, pky, Math.max(px, lw*1.6*(0.5 + peak)), 0, TAU); g.fill();
+    }
+  }
+  // hats scatter grain over the far half of the landscape
+  const hat = bandHit(2);
+  if (hat > 0.05 && M.hat > 0.01){ g.globalCompositeOperation = 'lighter'; g.fillStyle = 'rgba(255,248,224,' + Math.min(0.8, hat*M.hat*0.5).toFixed(3) + ')';
+    for (let i=0;i<Math.round(6 + M.hat*14);i++){ const d = 0.25 + Math.random()*0.7, z = zN + d*(zF - zN), sc = f/z;
+      g.fillRect(cx + (Math.random()*2 - 1)*wide*sc, cy + eye*sc*0.7 - Math.random()*0.3*sc, Math.max(1, px), Math.max(1, px)); } }
+  g.globalCompositeOperation = 'source-over';
+}
+MODE_RT.terrain = {
+  down(){ TR.drag = true; }, up(){ TR.drag = false; },
+  move(x, y, dx, dy){ TR.yaw -= dx; TR.pitch = clamp(TR.pitch + dy, -120, 160); },
+  wheel(d){ setDial('terrain', 'terrain', 'height', +clamp(S.terrain.fx.terrain.height*Math.exp(-d*0.0014), 0.1, 3).toFixed(2)); },
+  pinch(f){ setDial('terrain', 'terrain', 'height', +clamp(S.terrain.fx.terrain.height*f, 0.1, 3).toFixed(2)); },
+  dbl(){ TR.rows.length = 0; TR.yaw = 0; TR.pitch = 0; flash('Sound Terrain · cleared'); }
+};
+
+/* ================= Attractor: the music as the constants of a chaotic system =================
+   Each system is a handful of equations with two or three constants in them. Those constants are
+   where the bass, mids and highs go, so the music is not moving a finished shape around: it is
+   choosing which shape the equations have, and the orbit reorganises itself as the track moves.
+   Hits knock the point off its orbit, which chaos then amplifies into a visible new path. */
+const AT_SYS = {
+  lorenz:    { p:[10, 28, 2.667],      d:[7, 18, 1.8],      dt:0.0055, sc:0.055, flat:false, mid:[0, 0, 25],
+               f:(s, P) => [P[0]*(s[1] - s[0]), s[0]*(P[1] - s[2]) - s[1], s[0]*s[1] - P[2]*s[2]] },
+  rossler:   { p:[0.2, 0.2, 5.7],      d:[0.16, 0.25, 3.4], dt:0.022,  sc:0.075, flat:false, mid:[0, 0, 3],
+               f:(s, P) => [-s[1] - s[2], s[0] + P[0]*s[1], P[1] + s[2]*(s[0] - P[2])] },
+  thomas:    { p:[0.19, 1, 1],         d:[0.13, 0, 0],      dt:0.055,  sc:0.42,  flat:false, mid:[0, 0, 0],
+               f:(s, P) => [Math.sin(s[1]) - P[0]*s[0], Math.sin(s[2]) - P[0]*s[1], Math.sin(s[0]) - P[0]*s[2]] },
+  aizawa:    { p:[0.95, 0.7, 0.6],     d:[0.25, 0.45, 0.5], dt:0.022,  sc:0.62,  flat:false, mid:[0, 0, 0.6],
+               f:(s, P) => [(s[2] - P[1])*s[0] - 3.5*s[1], 3.5*s[0] + (s[2] - P[1])*s[1],
+                            0.6 + P[0]*s[2] - s[2]*s[2]*s[2]/3 - (s[0]*s[0] + s[1]*s[1])*(1 + P[2]*s[2]) + 0.1*s[2]*s[0]*s[0]*s[0] ] },
+  halvorsen: { p:[1.4, 1, 1],          d:[0.9, 0, 0],       dt:0.013,  sc:0.14,  flat:false, mid:[0, 0, 0],
+               f:(s, P) => [-P[0]*s[0] - 4*s[1] - 4*s[2] - s[1]*s[1], -P[0]*s[1] - 4*s[2] - 4*s[0] - s[2]*s[2], -P[0]*s[2] - 4*s[0] - 4*s[1] - s[0]*s[0]] },
+  dejong:    { p:[1.641, 1.902, 0.316], d:[0.9, 0.9, 0.9],  dt:1,      sc:0.46,  flat:true,  mid:[0, 0, 0],
+               f:(s, P) => [Math.sin(P[0]*s[1]) - Math.cos(P[1]*s[0]), Math.sin(P[2]*s[0]) - Math.cos(1.52*s[1]), 0] },
+  clifford:  { p:[-1.4, 1.6, 1.0],     d:[0.7, 0.7, 0.5],   dt:1,      sc:0.52,  flat:true,  mid:[0, 0, 0],
+               f:(s, P) => [Math.sin(P[0]*s[1]) + P[2]*Math.cos(P[0]*s[0]), Math.sin(P[1]*s[0]) + 0.7*Math.cos(P[1]*s[1]), 0] }
+};
+const AT = { ok:false, cv:$('#attract'), ctx:null, W:0, H:0, px:1, s:[0.1, 0, 0], hue:0, yaw:0, pitch:0.25, dyaw:0, drag:false, pb:0, c:[0, 0, 0], rad:1, sys:'', t:0, lut:null, lutKey:'' };
+function initAttract(){ if (AT.ok) return true; AT.ctx = AT.cv.getContext('2d'); AT.ok = !!AT.ctx; return AT.ok; }
+function atReset(sys){ const D = AT_SYS[sys] || AT_SYS.lorenz; AT.sys = sys; AT.s = D.flat ? [0.1, 0.1, 0] : [0.1, 0.1, D.mid[2] ? D.mid[2]*0.2 : 0.1]; AT.c = D.mid.slice(); AT.rad = 1; }
+function renderAttract(now, dt){
+  if (!AT.ok) return; mxSize(AT);
+  const F = S.attract.fx, Y = F.system, V = F.view, L = F.look, g = AT.ctx, W = AT.W, H = AT.H, px = AT.px, sec = Math.min(0.08, dt/60);
+  const sys = AT_SYS[Y.sys] ? Y.sys : 'lorenz', D = AT_SYS[sys];
+  if (sys !== AT.sys) atReset(sys);
+  AT.t += sec; AT.hue = (AT.hue + L.hueSpeed/360*sec) % 1;
+  // the music, written into the constants of the equations
+  const P = [D.p[0] + D.d[0]*(A.bass - 0.3)*Y.bassP, D.p[1] + D.d[1]*(A.mid - 0.3)*Y.midP, D.p[2] + D.d[2]*(A.treb - 0.3)*Y.trebP];
+  const kick = bandHit(0), snare = bandHit(1), hit = beatEdge(AT);
+  if ((kick > 0.1 || snare > 0.1) && Y.kick > 0.01){ const k = Math.max(kick, snare)*Y.kick*0.35;
+    for (let i=0;i<3;i++) AT.s[i] += (Math.random() - 0.5)*k*(D.flat ? 1.6 : AT.rad*0.9); }
+  AT.dyaw = AT.dyaw*Math.pow(0.93, dt) + hit*V.beatSpin*0.09;
+  if (!AT.drag){ AT.yaw += (V.spinY*0.2*sec + AT.dyaw*sec*6); AT.pitch += V.spinX*0.12*sec; }
+  // fade the last frame instead of clearing it: the orbit keeps its afterglow
+  g.globalCompositeOperation = 'source-over'; g.fillStyle = 'rgba(7,8,12,' + (1 - L.persist*0.97).toFixed(3) + ')'; g.fillRect(0, 0, W, H);
+  g.globalCompositeOperation = 'lighter';
+  const key = L.pal + ':' + AT.hue.toFixed(2);
+  if (AT.lutKey !== key){ AT.lut = []; for (let i=0;i<24;i++) AT.lut.push(palRGB(L.pal, AT.hue + i/24*0.75).map(x => x*255|0).join(',')); AT.lutKey = key; }
+  const steps = Math.round(clamp(Y.steps|0, 100, 6000)*(S.quality === 0 ? 0.45 : 1)*Math.min(1.6, dt));
+  const h = D.dt*Y.dt*(0.6 + A.level*0.9);
+  const jit = Y.jitter*A.treb*0.04, band = A.bass > A.mid && A.bass > A.treb ? 0 : A.mid > A.treb ? 0.42 : 0.82;
+  const co = Math.cos(AT.yaw), si = Math.sin(AT.yaw), cp = Math.cos(AT.pitch), sp = Math.sin(AT.pitch);
+  const zoom = V.zoom*0.42*Math.min(W, H), persp = V.persp, cx = W/2, cy = H/2;
+  const size = Math.max(0.5, L.size*px), draw = L.draw, dots = draw === 'dots' || draw === 'both', line = draw !== 'dots';
+  let px0 = 0, py0 = 0, started = false, maxR = 0, mx = 0, my = 0, mz = 0;
+  g.lineWidth = size; g.lineCap = 'round';
+  for (let n=0;n<steps;n++){
+    const s = AT.s, k = D.f(s, P);
+    if (D.flat){ s[0] = k[0] + (Math.random() - 0.5)*jit; s[1] = k[1] + (Math.random() - 0.5)*jit; }
+    else { s[0] += k[0]*h + (Math.random() - 0.5)*jit; s[1] += k[1]*h + (Math.random() - 0.5)*jit; s[2] += k[2]*h + (Math.random() - 0.5)*jit; }
+    if (!isFinite(s[0]) || !isFinite(s[1]) || !isFinite(s[2]) || Math.abs(s[0]) > 1e4){ atReset(sys); return; }
+    const sp2 = Math.hypot(k[0], k[1], k[2]);
+    let x = s[0] - (V.center ? AT.c[0] : D.mid[0]), y = s[1] - (V.center ? AT.c[1] : D.mid[1]), z = s[2] - (V.center ? AT.c[2] : D.mid[2]);
+    mx += s[0]; my += s[1]; mz += s[2]; const rr = Math.hypot(x, y, z); if (rr > maxR) maxR = rr;
+    const sc = D.sc/Math.max(0.35, AT.rad*0.75);
+    x *= sc; y *= sc; z *= sc;
+    const X = x*co - z*si, Z = x*si + z*co, Yv = y*cp - Z*sp, Zv = y*sp + Z*cp;
+    const w = 1/(1 + persp*Math.max(-0.9, Zv)*0.8), sxp = cx + X*zoom*w, syp = cy - Yv*zoom*w;
+    const ci = L.colorBy === 'speed' ? Math.min(23, (sp2*(D.flat ? 6 : 0.35)*12)|0)
+      : L.colorBy === 'depth' ? Math.min(23, Math.max(0, ((Zv + 1)*12)|0)) : L.colorBy === 'band' ? Math.min(23, (band*23)|0) : (n/steps*23)|0;
+    const rgb = AT.lut[ci] || AT.lut[0], al = (0.1 + 0.5*Math.min(1, A.level + 0.25)).toFixed(3);
+    if (line && started){ g.strokeStyle = 'rgba(' + rgb + ',' + al + ')'; g.beginPath(); g.moveTo(px0, py0); g.lineTo(sxp, syp); g.stroke(); }
+    if (dots){ g.fillStyle = 'rgba(' + rgb + ',' + al + ')'; g.fillRect(sxp, syp, size, size); }
+    px0 = sxp; py0 = syp; started = true;
+  }
+  if (L.glow > 0.01){ g.globalCompositeOperation = 'lighter'; g.globalAlpha = L.glow*0.3; g.filter = 'blur(' + (Math.min(W, H)*0.006).toFixed(1) + 'px)'; g.drawImage(AT.cv, 0, 0); g.filter = 'none'; g.globalAlpha = 1; }
+  // the orbit's drifting middle and spread, so a change of constants cannot walk it off screen
+  const inv = 1/steps, lk = Math.min(1, sec*1.5);
+  AT.c[0] += (mx*inv - AT.c[0])*lk; AT.c[1] += (my*inv - AT.c[1])*lk; AT.c[2] += (mz*inv - AT.c[2])*lk;
+  AT.rad += (Math.max(0.2, maxR) - AT.rad)*lk*0.7;
+  g.globalCompositeOperation = 'source-over';
+}
+MODE_RT.attract = {
+  down(){ AT.drag = true; }, up(){ AT.drag = false; },
+  move(x, y, dx, dy){ AT.yaw += dx*0.007; AT.pitch = clamp(AT.pitch + dy*0.005, -1.4, 1.4); },
+  wheel(d){ setDial('attract', 'view', 'zoom', +clamp(S.attract.fx.view.zoom*Math.exp(-d*0.0012), 0.3, 3).toFixed(2)); },
+  pinch(f){ setDial('attract', 'view', 'zoom', +clamp(S.attract.fx.view.zoom*f, 0.3, 3).toFixed(2)); },
+  tap(){ atReset(AT.sys); },
+  dbl(){ AT.yaw = 0; AT.pitch = 0.25; atReset(AT.sys); flash('Attractor · view reset'); }
+};
+
+/* ================= Cymatics: the notes as standing waves on a plate =================
+   A Chladni figure is the set of places a vibrating plate does not move, where the sand collects.
+   Which figure appears depends only on which mode is ringing, and a mode's pitch goes as
+   √(n²+m²) — so here every note the music plays is matched to the mode whose pitch it is, and the
+   sand draws the chord. One note is a clean figure; a chord is the sum of three of them. */
+const CY_PAIRS = (() => { const a = []; for (let n=1;n<=8;n++) for (let m=n;m<=8;m++) if (n !== m) a.push([n, m, Math.sqrt(n*n + m*m)]); a.sort((p, q) => p[2] - q[2]); return a; })();
+const CY_FS = `#version 300 es
+precision highp float;
+out vec4 o; uniform vec2 uRes; uniform vec4 uM[8]; uniform float uEdge, uWidth, uSharp, uPlate, uGlow, uZoom, uRot, uAsp, uWarp, uGrain, uFlash, uLevel, uBass;
+uniform vec3 uPa, uPb, uPc, uPd;
+const float PI = 3.14159265;
+vec3 pal(float t){ return clamp(uPa + uPb*cos(6.28318*(uPc*t + uPd)), 0.0, 1.0); }
+float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7)))*43758.5453); }
+float plate(vec2 p){
+  float s = 0.0;
+  for (int k=0;k<8;k++){
+    vec4 M = uM[k]; if (M.z <= 0.001) continue;
+    float n = M.x, m = M.y, v;
+    if (uEdge < 0.5) v = cos(n*PI*p.x)*cos(m*PI*p.y) - cos(m*PI*p.x)*cos(n*PI*p.y);   // square plate held at the centre: the classic figure
+    else if (uEdge < 1.5) v = cos(n*PI*p.x)*cos(m*PI*p.y);                             // free edges
+    else v = sin(n*PI*(p.x*0.5 + 0.5))*sin(m*PI*(p.y*0.5 + 0.5));                      // clamped like a drum skin
+    s += M.z*v*cos(M.w);
+  }
+  return s;
+}
+void main(){
+  vec2 q = (gl_FragCoord.xy/uRes - 0.5)*2.0; q.x *= uAsp;
+  float c = cos(uRot), si = sin(uRot); q = vec2(q.x*c - q.y*si, q.x*si + q.y*c);
+  q /= uZoom; q.x *= 1.0 + uWarp; q.y *= 1.0 - uWarp*0.6;
+  float u = plate(q);
+  float w = max(0.002, uWidth*(1.0 - 0.35*uBass));
+  float sand = pow(1.0 - smoothstep(0.0, w, abs(u)), uSharp);
+  float body = smoothstep(0.0, 1.2, abs(u));
+  vec3 col = pal(0.12 + 0.55*sand + 0.1*uLevel)*sand*(1.0 + uFlash*1.6);
+  col += pal(0.7 + 0.2*body)*body*uPlate*0.5;
+  col += pal(0.5)*sand*uGlow*0.6;
+  if (uGrain > 0.001){ float g = hash(gl_FragCoord.xy + vec2(uFlash*37.0, uLevel*53.0)); col += vec3(g*uGrain*0.14*sand); }
+  float vig = 1.0 - 0.25*dot(q, q)*0.15;
+  o = vec4(col*vig, 1.0);
+}`;
+const CY = { tried:false, ok:false, gl:null, cv:$('#cymatic'), P:null, W:0, H:0, px:1, hue:0, rot:0, slots:[], pb:0, flash:0, reason:'', warp:0 };
+function initCymatic(){
+  if (CY.tried) return CY.ok; CY.tried = true;
+  const gl = CY.cv.getContext('webgl2', { antialias:false, depth:false, stencil:false, alpha:false });
+  if (!gl){ CY.reason = 'needs WebGL2'; return false; }
+  try { CY.P = glProg(gl, GLQ, CY_FS); } catch(e){ console.error(e); CY.reason = 'shader failed'; return false; }
+  CY.gl = gl; CY.ok = true;
+  for (let i=0;i<8;i++) CY.slots.push({ midi:-1, n:1, m:2, amp:0, ph:Math.random()*TAU });
+  return true;
+}
+// a note → the mode whose pitch it is: index up the modes sorted by √(n²+m²), one step per `spread` semitones
+function cyMode(midi, base, spread){ const i = clamp(Math.round((midi - base)/Math.max(1, spread)), 0, CY_PAIRS.length - 1); return CY_PAIRS[i]; }
+function renderCymatic(now, dt){
+  if (!CY.ok) return;
+  const gl = CY.gl, F = S.cymatic.fx, Pl = F.plate, M = F.music, L = F.look, sec = Math.min(0.08, dt/60);
+  const r = stageRect(), d = Math.min(window.devicePixelRatio || 1, S.quality === 0 ? 1 : 1.5);
+  const W = Math.max(16, Math.round(r.w*d)), H = Math.max(16, Math.round(r.h*d));
+  if (W !== CY.W || H !== CY.H){ CY.cv.width = W; CY.cv.height = H; CY.W = W; CY.H = H; }
+  CY.hue = (CY.hue + L.hueSpeed/360*sec) % 1; CY.rot += L.spin*0.3*sec*(1 + A.mid*0.4);
+  mxFlux();
+  const notes = mxNotes(clamp(Pl.modes|0, 1, 8), Pl.sens, now, Pl.decay, sec);
+  // every sounding note claims a slot and keeps it, so its wave's phase runs on instead of restarting
+  const want = notes.slice(0, clamp(Pl.modes|0, 1, 8)), keep = new Set();
+  for (const nt of want){
+    let sl = CY.slots.find(s => s.midi === nt.m);
+    if (!sl){ sl = CY.slots.filter(s => !keep.has(s)).sort((a, b) => a.amp - b.amp)[0]; if (!sl) continue;
+      const md = cyMode(nt.m, Pl.base, Pl.spread); sl.midi = nt.m; sl.n = md[0]; sl.m = md[1]; sl.ph = Math.random()*TAU; }
+    keep.add(sl); sl.amp = Math.max(sl.amp, nt.s);
+  }
+  const dec = Math.exp(-sec/Math.max(0.05, Pl.decay)), shake = M.shake*MX.flux;
+  const uM = new Float32Array(32);
+  let i = 0, amax = 0;
+  for (const s of CY.slots){
+    if (!keep.has(s)) s.amp *= dec; if (s.amp < 0.004){ s.amp = 0; s.midi = -1; }
+    const fr = Math.sqrt(s.n*s.n + s.m*s.m);                                  // a mode's own pitch: higher modes ring faster
+    s.ph += sec*fr*2.2*Pl.rate*(1 + A.level*0.5) + shake*0.5;
+    const a = s.amp*(0.35 + M.bass*A.bass*1.1 + A.level*0.3);
+    uM[i*4] = s.n; uM[i*4+1] = s.m; uM[i*4+2] = a; uM[i*4+3] = s.ph; amax = Math.max(amax, a); i++;
+  }
+  // nothing detectable (drums only, or silence): keep the plate alive on the bass alone
+  if (amax < 0.02){ const md = cyMode(Pl.base + 12, Pl.base, Pl.spread); uM[0] = md[0]; uM[1] = md[1];
+    uM[2] = 0.25 + M.bass*A.bass*0.8 + A.level*0.4; uM[3] = (CY.slots[0].ph += sec*md[2]*2.2*Pl.rate); }
+  const hit = beatEdge(CY); CY.flash = Math.max(CY.flash*Math.pow(0.86, dt), hit*M.flash*0.5);
+  CY.warp = CY.warp*Math.pow(0.9, dt) + hit*M.warp*0.12;
+  const P = CY.P, pal = HY_PALS[L.pal] || HY_PALS.ice, ph = CY.hue;
+  gl.useProgram(P.p);
+  gl.uniform2f(P.u.uRes, W, H); gl.uniform4fv(P.u.uM, uM); gl.uniform1f(P.u.uEdge, Pl.edge === 'square' ? 0 : Pl.edge === 'free' ? 1 : 2);
+  gl.uniform1f(P.u.uWidth, L.width); gl.uniform1f(P.u.uSharp, L.sharp); gl.uniform1f(P.u.uPlate, L.plate); gl.uniform1f(P.u.uGlow, L.glow);
+  gl.uniform1f(P.u.uZoom, L.zoom); gl.uniform1f(P.u.uRot, CY.rot); gl.uniform1f(P.u.uAsp, W/H); gl.uniform1f(P.u.uWarp, CY.warp);
+  gl.uniform1f(P.u.uGrain, M.grain*A.treb); gl.uniform1f(P.u.uFlash, CY.flash); gl.uniform1f(P.u.uLevel, A.level); gl.uniform1f(P.u.uBass, A.bass*M.bass);
+  gl.uniform3fv(P.u.uPa, pal[0]); gl.uniform3fv(P.u.uPb, pal[1]); gl.uniform3fv(P.u.uPc, pal[2]);
+  gl.uniform3f(P.u.uPd, pal[3][0] + ph, pal[3][1] + ph, pal[3][2] + ph);
+  glDraw(gl, P, null, W, H);
+}
+MODE_RT.cymatic = {
+  wheel(d){ setDial('cymatic', 'look', 'zoom', +clamp(S.cymatic.fx.look.zoom*Math.exp(-d*0.0012), 0.5, 2.5).toFixed(2)); },
+  pinch(f){ setDial('cymatic', 'look', 'zoom', +clamp(S.cymatic.fx.look.zoom*f, 0.5, 2.5).toFixed(2)); },
+  tap(){ for (const s of CY.slots) s.ph = Math.random()*TAU; },
+  dbl(){ setDial('cymatic', 'look', 'zoom', 1); CY.rot = 0; flash('Cymatics · view reset'); }
+};
+
+/* ================= Song Memory: every moment against every moment =================
+   A self-similarity map, the picture Foote introduced to music analysis: each moment of the track
+   is described by what notes it holds and how it sounds, then compared with every moment kept in
+   memory. A repeated chorus draws a line parallel to the diagonal, a held section fills a block,
+   and sliding a checkerboard along the diagonal finds the edges between sections while it plays. */
+const MM = { ok:false, cv:$('#memory'), ctx:null, W:0, H:0, px:1, N:0, D:20, F:null, sim:null, nov:null, idx:0, n:0, acc:0, hue:0,
+             img:null, ictx:null, lut:null, lutKey:'', dirty:true, flash:0, pb:0, novMax:0.001, key:'', bt:0, spin:0, mu:new Float64Array(20) };
+function initMemory(){ if (MM.ok) return true; MM.ctx = MM.cv.getContext('2d'); MM.ok = !!MM.ctx; return MM.ok; }
+function memoryClear(){ if (MM.F){ MM.F.fill(0); MM.sim.fill(0); MM.nov.fill(0); MM.mu.fill(0); } MM.n = 0; MM.idx = 0; MM.dirty = true; flash('Song Memory · forgotten'); }
+function mmAlloc(N){
+  if (MM.N === N) return;
+  MM.N = N; MM.F = new Float32Array(N*MM.D); MM.sim = new Uint8Array(N*N); MM.nov = new Float32Array(N); MM.mu = new Float64Array(MM.D); MM.n = 0; MM.idx = 0; MM.dirty = true;
+  MM.img = MM.img || el('canvas'); MM.img.width = N; MM.img.height = N; MM.ictx = MM.img.getContext('2d', { willReadFrequently:true });
+}
+// one moment of the music, as a vector: 12 chroma (what notes) and 8 coarse bands (how it sounds)
+const MM_T = new Float64Array(8), MM_V = new Float64Array(32);
+function mmFeature(out, o, mode){
+  // timbre: log energy in eight log-spaced bands with the average taken out, so loudness drops away
+  // and only the shape of the sound is left. Without that every moment looks alike.
+  let mean = 0, ts = 0, loud = 0;
+  for (let i=0;i<8;i++){ const u0 = Math.pow(i/8, 1.35), u1 = Math.pow((i + 1)/8, 1.35); let s = 0, c = 0;
+    for (let u=u0;u<u1;u+=0.02){ s += specTrue(u); c++; }
+    const e = c ? s/c : 0; loud += e; const v = Math.log(2e-4 + e); MM_T[i] = v; mean += v; }
+  mean /= 8; for (let i=0;i<8;i++){ MM_T[i] -= mean; ts += MM_T[i]*MM_T[i]; }
+  let cs = 0; for (let i=0;i<12;i++) cs += MX.chroma[i]*MX.chroma[i];
+  const cn = cs > 1e-9 ? 1/Math.sqrt(cs) : 0, tn = ts > 1e-9 ? 1/Math.sqrt(ts) : 0;
+  const cw = mode === 'timbre' ? 0 : mode === 'harmony' ? 1 : 0.72, tw = mode === 'harmony' ? 0 : mode === 'timbre' ? 1 : 0.69;
+  for (let i=0;i<12;i++) MM_V[i] = MX.chroma[i]*cn*cw;
+  for (let i=0;i<8;i++) MM_V[12 + i] = MM_T[i]*tn*tw;
+  // then centred on the running average of what is in memory: every moment of one track resembles every
+  // other one in absolute terms, so what is worth drawing is how a moment differs from the piece's own average
+  const mu = MM.mu, D = MM.D; let s = 0;
+  for (let i=0;i<D;i++){ mu[i] += (MM_V[i] - mu[i])*0.015; const v = MM_V[i] - mu[i]; out[o + i] = v; s += v*v; }
+  const n = s > 1e-9 ? 1/Math.sqrt(s) : 0;
+  for (let i=0;i<D;i++) out[o + i] *= n;
+  return loud > 2e-3 && n > 0;                                                 // silence stays blank instead of matching other silence
+}
+function mmTick(Mo){
+  const N = MM.N, D = MM.D, F = MM.F, sim = MM.sim, i = MM.idx;
+  if (!mmFeature(F, i*D, Mo.feature)){ for (let d=0;d<D;d++) F[i*D + d] = 0; }
+  for (let j=0;j<N;j++){
+    let s = 0; for (let d=0;d<D;d++) s += F[i*D + d]*F[j*D + d];
+    const v = Math.max(0, Math.min(1, s))*255 | 0; sim[i*N + j] = v; sim[j*N + i] = v;
+  }
+  sim[i*N + i] = 255;
+  MM.idx = (i + 1) % N; MM.n = Math.min(N, MM.n + 1); MM.dirty = true;
+  // Foote's novelty: a gaussian-tapered checkerboard slid along the diagonal peaks where the music changes
+  const Lk = clamp(Math.round(N/16), 3, 20), c = (i - Lk + N) % N;
+  let nv = 0, wsum = 0;
+  for (let a=-Lk;a<Lk;a++) for (let b=-Lk;b<Lk;b++){
+    const ia = (c + a + N) % N, jb = (c + b + N) % N, w = Math.exp(-(a*a + b*b)/(Lk*Lk*0.5))*((a < 0) === (b < 0) ? 1 : -1);
+    nv += w*sim[ia*N + jb]/255; wsum += Math.abs(w);
+  }
+  nv = Math.max(0, -nv/Math.max(1e-6, wsum));
+  MM.nov[c] = nv; MM.novMax = Math.max(MM.novMax*0.995, nv);
+  if (nv > MM.novMax*0.7 && MM.n > Lk*3) MM.flash = Math.min(1, MM.flash + nv/Math.max(1e-6, MM.novMax));
+}
+function mmPaint(Mo, L){
+  const N = MM.N, sim = MM.sim, g = MM.ictx, id = g.createImageData(N, N), px = id.data;
+  const key = L.pal + ':' + MM.hue.toFixed(2);
+  if (MM.lutKey !== key){ MM.lut = new Uint8Array(256*3); for (let i=0;i<256;i++){ const c = palRGB(L.pal, MM.hue + i/256*0.8); MM.lut[i*3] = c[0]*255|0; MM.lut[i*3+1] = c[1]*255|0; MM.lut[i*3+2] = c[2]*255|0; } MM.lutKey = key; }
+  const lut = MM.lut, en = Mo.enhance, th = Mo.thresh*255, k = Mo.contrast, floor = L.floor;
+  const off = MM.idx;                                                           // oldest moment first, so time runs left to right and top to bottom
+  for (let y=0;y<N;y++){ const sy = (off + y) % N;
+    for (let x=0;x<N;x++){ const sx = (off + x) % N;
+      let v = sim[sy*N + sx];
+      if (en > 0.01){                                                           // average along the diagonal: a dotted repeat becomes one clean line
+        const a = sim[((sy + 1) % N)*N + (sx + 1) % N], b = sim[((sy - 1 + N) % N)*N + (sx - 1 + N) % N];
+        v = v*(1 - en) + (v + a + b)/3*en;
+      }
+      v = v <= th ? 0 : (v - th)/Math.max(1, 255 - th)*255;
+      v = Math.min(255, Math.pow(v/255, Math.max(0.2, k))*255);               // higher contrast keeps only the clear likenesses
+      // the palette picks the colour, the likeness itself sets the brightness, so unlike moments go dark
+      const o = (y*N + x)*4, c = (v | 0)*3, b = Math.max(floor, v/255);
+      px[o] = lut[c]*b; px[o + 1] = lut[c + 1]*b; px[o + 2] = lut[c + 2]*b; px[o + 3] = 255;
+    } }
+  g.putImageData(id, 0, 0); MM.dirty = false;
+}
+function renderMemory(now, dt){
+  if (!MM.ok) return; mxSize(MM);
+  const F = S.memory.fx, Mo = F.memory, Mk = F.marks, L = F.look, g = MM.ctx, W = MM.W, H = MM.H, px = MM.px, sec = Math.min(0.08, dt/60);
+  MM.hue = (MM.hue + L.hueSpeed/360*sec) % 1;
+  const N = clamp(Math.round(Math.min(Mo.window*Mo.rate, S.quality === 0 ? 220 : 420)), 32, 420);
+  const kk = Mo.feature + ':' + N; if (kk !== MM.key){ MM.key = kk; mmAlloc(N); }
+  mxNotes(6, 1, now, 0.35, sec);
+  MM.acc += sec; const iv = Mo.window/MM.N;                                     // the memory always spans the window, however coarse that makes a moment
+  let ticks = 0; while (MM.acc >= iv && ticks < 8){ MM.acc -= iv; mmTick(Mo); ticks++; }
+  if (MM.acc > iv*8) MM.acc = 0;                                                // after a long stall, pick up from now rather than racing to catch up
+  MM.flash *= Math.pow(0.9, dt);
+  g.globalCompositeOperation = 'source-over'; g.fillStyle = '#07080c'; g.fillRect(0, 0, W, H);
+  const side = Math.min(W, H)*0.92*L.zoom, x0 = (W - side)/2, y0 = (H - side)/2;
+  // while the memory is still filling, only the part that holds music is shown, so the picture is full
+  // from the first bar and simply gains detail; the newest moment is always the right and bottom edge
+  const fn = Math.max(8, Math.min(MM.N, MM.n)), src = MM.N - fn;
+  if (Mo.view === 'matrix'){
+    if (MM.dirty || MM.lutKey !== L.pal + ':' + MM.hue.toFixed(2)) mmPaint(Mo, L);
+    g.imageSmoothingEnabled = fn < side/2;
+    g.globalAlpha = 1; g.drawImage(MM.img, src, src, fn, fn, x0, y0, side, side);
+    if (L.glow > 0.01 || MM.flash > 0.01){ g.globalCompositeOperation = 'lighter'; g.globalAlpha = Math.min(1, L.glow*0.4 + MM.flash*Mk.flash*0.5);
+      g.filter = 'blur(' + (side*0.01).toFixed(1) + 'px)'; g.drawImage(MM.img, src, src, fn, fn, x0, y0, side, side); g.filter = 'none'; g.globalAlpha = 1; }
+    g.globalCompositeOperation = 'lighter';
+    if (Mk.head > 0.01){ const e = Math.max(1.5, px*1.5); g.fillStyle = 'rgba(233,236,244,' + (0.45*Mk.head).toFixed(3) + ')';
+      g.fillRect(x0 + side - e, y0, e, side); g.fillRect(x0, y0 + side - e, side, e); }
+    if (Mk.novelty > 0.01){                                                     // the novelty curve along the bottom: its peaks are the section edges
+      g.strokeStyle = mxCol(L.pal, MM.hue + 0.5, 0.9); g.lineWidth = Math.max(1, 1.4*px); g.beginPath();
+      for (let i=0;i<fn;i++){ const v = MM.nov[(MM.idx + src + i) % MM.N]/Math.max(1e-6, MM.novMax), x = x0 + i/fn*side, y = y0 + side - v*side*0.14*Mk.novelty;
+        i ? g.lineTo(x, y) : g.moveTo(x, y); }
+      g.stroke();
+    }
+    if (Mk.beats > 0.01 && TEMPO.period){                                       // one mark per beat back from now, so bars can be counted across the picture
+      const span = fn*iv*1000/TEMPO.period; g.strokeStyle = 'rgba(200,210,255,' + (0.14*Mk.beats).toFixed(3) + ')'; g.lineWidth = Math.max(1, px);
+      g.beginPath(); for (let b=0;b<Math.min(256, span);b++){ const x = x0 + side*(1 - b/span); g.moveTo(x, y0 + side); g.lineTo(x, y0 + side*0.97); } g.stroke(); }
+  } else {
+    // arcs: time wrapped around a circle, with a chord drawn between every pair of moments that rhyme
+    const cx = W/2, cy = H/2, R = side*0.46, N2 = MM.N, sim = MM.sim, th = Mo.thresh*255;
+    MM.spin += Mk.spin ? 0 : sec*0.05; const rot = Mk.spin && TEMPO.period ? ((now - TEMPO.anchor)/TEMPO.period)*0.2 : MM.spin;
+    const ring = p => (MM.idx + src + p) % N2;                                  // p runs over the filled part, oldest to newest
+    const ang = p => p/fn*TAU - Math.PI/2 + rot;
+    const step = Math.max(1, Math.round(fn/120)); let drawn = 0;
+    g.globalCompositeOperation = 'lighter'; g.lineWidth = Math.max(0.6, L.width*px);
+    for (let a=0;a<fn && drawn < 1400;a+=step) for (let b=a+step*2;b<fn && drawn < 1400;b+=step){
+      const v = sim[ring(a)*N2 + ring(b)]; if (v <= th) continue; drawn++;
+      const s = (v - th)/Math.max(1, 255 - th), al = Math.pow(s, Math.max(0.2, Mo.contrast))*0.5;
+      if (al < 0.02) continue;
+      const aa = ang(a), ab = ang(b), x1 = cx + Math.cos(aa)*R, y1 = cy + Math.sin(aa)*R, x2 = cx + Math.cos(ab)*R, y2 = cy + Math.sin(ab)*R;
+      g.strokeStyle = mxCol(L.pal, MM.hue + s*0.45, (al*(1 + MM.flash*Mk.flash)).toFixed(3));
+      g.beginPath(); g.moveTo(x1, y1); g.quadraticCurveTo(cx + (Math.cos(aa) + Math.cos(ab))*R*0.12, cy + (Math.sin(aa) + Math.sin(ab))*R*0.12, x2, y2); g.stroke();
+    }
+    // the rim: one mark per moment, its brightness the novelty there
+    for (let i=0;i<fn;i+=1){ const v = MM.nov[ring(i)]/Math.max(1e-6, MM.novMax), aa = ang(i), r1 = R*(1.02 + 0.09*v*Mk.novelty);
+      g.strokeStyle = mxCol(L.pal, MM.hue + 0.6, (0.12 + 0.7*v*Mk.novelty).toFixed(3)); g.lineWidth = Math.max(0.8, px);
+      g.beginPath(); g.moveTo(cx + Math.cos(aa)*R*1.01, cy + Math.sin(aa)*R*1.01); g.lineTo(cx + Math.cos(aa)*r1, cy + Math.sin(aa)*r1); g.stroke(); }
+    if (Mk.head > 0.01){ const aa = ang(fn - 1); g.strokeStyle = 'rgba(233,236,244,' + (0.8*Mk.head).toFixed(3) + ')'; g.lineWidth = Math.max(1, 1.4*px);
+      g.beginPath(); g.moveTo(cx + Math.cos(aa)*R*0.9, cy + Math.sin(aa)*R*0.9); g.lineTo(cx + Math.cos(aa)*R*1.16, cy + Math.sin(aa)*R*1.16); g.stroke(); }
+  }
+  g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+}
+MODE_RT.memory = {
+  wheel(d){ setDial('memory', 'look', 'zoom', +clamp(S.memory.fx.look.zoom*Math.exp(-d*0.0012), 0.5, 1.6).toFixed(2)); },
+  pinch(f){ setDial('memory', 'look', 'zoom', +clamp(S.memory.fx.look.zoom*f, 0.5, 1.6).toFixed(2)); },
+  dbl(){ memoryClear(); }
+};
+
 /* ---------- engine registry for the new modes ---------- */
-const MODE_INIT = { swarm:initSwarm, ink:initInk, mandala:initMandala, laser:initLaser, deep:initDeep, weave:initWeave, box:initBox };
-const MODE_OK = { swarm:() => SW.ok, ink:() => INK.ok, mandala:() => MD.ok, laser:() => LZ.ok, deep:() => D3.ok, weave:() => WV.ok, box:() => BX.ok };
-const MODE_RENDER = { swarm:renderSwarm, ink:renderInk, mandala:renderMandala, laser:renderLaser, deep:renderDeep, weave:renderWeave, box:renderBox };
-const MODE_WHY = { ink:() => 'Ink ' + (INK.reason || 'is not supported here'), swarm:() => 'Swarm needs WebGL2', laser:() => 'Laser show needs WebGL2', mandala:() => 'Mandala could not start', deep:() => '3D Worlds needs a PC', weave:() => 'Sound Weaver could not start', box:() => 'Music Box could not start' };
+const MODE_INIT = { swarm:initSwarm, ink:initInk, mandala:initMandala, laser:initLaser, deep:initDeep, weave:initWeave, box:initBox,
+  tonnetz:initTonnetz, terrain:initTerrain, attract:initAttract, cymatic:initCymatic, memory:initMemory };
+const MODE_OK = { swarm:() => SW.ok, ink:() => INK.ok, mandala:() => MD.ok, laser:() => LZ.ok, deep:() => D3.ok, weave:() => WV.ok, box:() => BX.ok,
+  tonnetz:() => TZ.ok, terrain:() => TR.ok, attract:() => AT.ok, cymatic:() => CY.ok, memory:() => MM.ok };
+const MODE_RENDER = { swarm:renderSwarm, ink:renderInk, mandala:renderMandala, laser:renderLaser, deep:renderDeep, weave:renderWeave, box:renderBox,
+  tonnetz:renderTonnetz, terrain:renderTerrain, attract:renderAttract, cymatic:renderCymatic, memory:renderMemory };
+const MODE_WHY = { ink:() => 'Ink ' + (INK.reason || 'is not supported here'), swarm:() => 'Swarm needs WebGL2', laser:() => 'Laser show needs WebGL2', mandala:() => 'Mandala could not start', deep:() => '3D Worlds needs a PC', weave:() => 'Sound Weaver could not start', box: () => 'Music Box could not start',
+  tonnetz: () => 'Harmony Lattice could not start', terrain: () => 'Sound Terrain could not start', attract: () => 'Attractor could not start',
+  cymatic: () => 'Cymatics ' + (CY.reason || 'is not supported here'), memory: () => 'Song Memory could not start' };
 function engineAvail(k){
   if (k==='milk') return milkOK;
   if (k==='hyper') return HY.ok || !HY.tried;
   if (k==='deep') return PC_CLASS ? (D3.ok || !D3.tried) : !!window.__remoteLinked;
-  if (MODE_INIT[k]) return MODE_OK[k]() || !((k==='mandala' || k==='weave' || k==='box') ? false : (k==='ink' ? INK.tried : k==='swarm' ? SW.tried : LZ.tried));
+  if (MODE_INIT[k]) return MODE_OK[k]() || !(k==='ink' ? INK.tried : k==='swarm' ? SW.tried : k==='laser' ? LZ.tried : k==='cymatic' ? CY.tried : false);
   return true;
 }
 function modeStepGroup(eng, d){ const sel = $('#fxsel-'+eng), n = sel.options.length; if (!n) return; sel.selectedIndex = ((sel.selectedIndex + d) % n + n) % n; renderPanel(eng); flash(UI[eng].effects[sel.value].label); }
@@ -4231,6 +4995,11 @@ const ENGINE_TIPS = {
   milk: 'MilkDrop: hundreds of classic MilkDrop 2 presets, with live edit dials like the M menu.',
   avs: 'AVS stack: build your own Winamp AVS-style effect from Trans (warp the last frame) and Render (draw) effects.',
   classic: 'Classic: the original Winamp main-window analyzer and oscilloscope.',
+  tonnetz: 'Harmony Lattice: the twelve notes laid out so that a fifth is one step right and a major third one step up, which makes every triangle a chord. The notes playing light up, chords fill in as plates and the view drifts toward the key the music is in.',
+  cymatic: 'Cymatics: sand on a vibrating plate, played by the music. Every note sounding is matched to the standing wave whose pitch it is, so a single note draws one clean Chladni figure and a chord draws the sum of them.',
+  terrain: 'Sound Terrain: the spectrum\u2019s own history as a landscape you fly over. Every slice of the music is one ridge and stays where it was cut; a new slice per beat lines the ridges up into bars.',
+  attract: 'Attractor: a chaotic system whose constants are the bass, mids and highs, so the music chooses the shape the equations settle into. Kicks and snares knock the point off its orbit.',
+  memory: 'Song Memory: every moment of the track compared with every moment before it. Repeats show as lines parallel to the diagonal, sections as blocks, and the curve underneath peaks where the music changes.',
   reactor: 'Reactor: a waveform ring with spectrum spokes, sparks and shockwaves over a zooming feedback trail.'
 };
 const FX_TIPS = {

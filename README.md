@@ -10,7 +10,13 @@ A Winamp-style music visualizer that turns whatever you're playing into living v
 
 ## What it does
 
-Twelve visualizers: Hyperspace (endless zooms through space or your own picture), Sound Weaver (fly through glowing 3D ribbons the music writes as it plays), Music Box (every note the music plays draws its own line on a slowly turning drum: the notes set the lines, not the loudness), 3D Worlds (ten scenes drawn on your graphics card), Ink (a real fluid simulation you stir with the mouse), Swarm, Mandala, Laser show, 98 classic MilkDrop presets (242 with the extra pack), an AVS-style effect builder, the Classic analyzer and Reactor.
+Seventeen visualizers: Hyperspace (endless zooms through space or your own picture), Sound Weaver (fly through glowing 3D ribbons the music writes as it plays), Music Box (every note the music plays draws its own line on a slowly turning drum: the notes set the lines, not the loudness), 3D Worlds (ten scenes drawn on your graphics card), Ink (a real fluid simulation you stir with the mouse), Swarm, Mandala, Laser show, 98 classic MilkDrop presets (242 with the extra pack), an AVS-style effect builder, the Classic analyzer and Reactor — plus five where the music is the mathematics:
+
+- **Harmony Lattice** — the twelve notes laid out so that a perfect fifth is one step right and a major third one step up, which makes every small triangle a chord: up for major, down for minor. The notes playing light up, chords fill in as glowing plates, and the view drifts toward whatever key the music is in (the average of the notes around the circle of fifths).
+- **Cymatics** — sand on a vibrating plate. A plate mode's pitch goes as √(n²+m²), so every note sounding is matched to the standing wave whose pitch it is: one note draws a clean Chladni figure, a chord draws the sum of them.
+- **Sound Terrain** — the spectrum's own history as a landscape you fly over. Each slice becomes one ridge and stays where it was cut; by default a new slice is cut every quarter beat, so the rhythm lines the ridges up into bars.
+- **Attractor** — a chaotic system (Lorenz, Rössler, Thomas, Aizawa, Halvorsen, De Jong, Clifford) whose constants *are* the bass, mids and highs, so the music chooses the shape the equations settle into; kicks and snares knock the point onto a new path.
+- **Song Memory** — every moment of the track compared with every moment before it, the self-similarity picture Foote brought to music analysis. A repeated chorus draws a line parallel to the diagonal, a held section fills a block, and a checkerboard slid along the diagonal finds the edges between sections as it plays.
 
 Bass, mid and high each drive the picture their own way, kicks, snares and hats hit harder, and Dynamics decides how calm quiet music looks. **Bright** dims or lifts every visualizer at once without changing how it reacts. Save any picture you like as a named look and bring it back later.
 
