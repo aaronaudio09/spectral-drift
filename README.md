@@ -26,7 +26,11 @@ The controls you reach for most are always in view: the visualizer and its scene
 
 ## Your looks on every device
 
-Saved looks stay on the device you made them on. To have them everywhere, press **Sign in with Google** under Saved looks (in the browser version for now) and they follow you to every browser where you sign in. Signing in is optional. It stores your Google sign-in details (account ID, name, email address and profile picture link) and your saved looks in Google Firebase, used for nothing but syncing them. **Sign out** stops syncing; **Delete cloud copy** erases your looks and your sign-in record from it.
+Saved looks stay on the device you made them on. To have them everywhere, press **Sign in with Google** under Saved looks — in the browser, in the Windows app and in the Android app — and they follow you to every device you sign in on. Signing in is optional. (A copy opened straight off the disk as a `file://` page can't sign in: Google needs a web address. Self-hosting your own copy? Add its address under Authentication → Settings → Authorized domains in the Firebase console; until you do, the sign-in button says so and names the address.) It stores your Google sign-in details (account ID, name, email address and profile picture link) and your saved looks in Google Firebase, used for nothing but syncing them. **Sign out** stops syncing; **Delete cloud copy** erases your looks and your sign-in record from it.
+
+## On your TV
+
+Press the cast button at the top right of the picture (or **C**) to send the visualizer to a Chromecast, an Android TV or any Google Cast device on your Wi-Fi. The TV draws the picture and follows every dial you move; the music keeps playing on the device you started from, which does the listening. Press it again to stop. It works the same from the browser, the Windows app and the Android app. In a browser without Cast support, its own **Cast…** menu still mirrors the tab.
 
 ## On a Mac
 
@@ -34,6 +38,6 @@ Use Chrome or Edge. Press ▶ for the built-in demo, or open **Source** to load 
 
 ## Keys
 
-Space play/pause · N / P next/previous · R random · E next visualizer · F fullscreen · H hide controls · S save the look on screen
+Space play/pause · N / P next/previous · R random · E next visualizer · F fullscreen · H hide controls · S save the look on screen · C cast to a TV
 
 No ads, no tracking. Made by Aaron Does It.

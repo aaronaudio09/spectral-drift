@@ -39,6 +39,7 @@ body.ui-hidden .stagebtns{display:none}
 .stagebtns{position:absolute;right:max(10px,env(safe-area-inset-right,0px));top:10px;display:flex;gap:6px}
 .icobtn{width:36px;height:36px;border-radius:var(--radius);background:rgba(7,8,12,.62);border:1px solid var(--line-2);color:var(--fg);display:grid;place-items:center;cursor:pointer;padding:0}
 .icobtn:hover{border-color:var(--accent)}
+.icobtn.on{border-color:var(--accent);color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
 .icobtn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .toast{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);background:rgba(7,8,12,.86);border:1px solid var(--line-2);padding:8px 14px;border-radius:var(--radius);font-size:12px;color:var(--fg);opacity:0;transition:opacity .3s;pointer-events:none;max-width:88%;text-align:center}
 .toast.show{opacity:1}
@@ -238,6 +239,9 @@ body.ui-hidden.interactive .showbtn{display:grid}
     <div class="flash" id="flash"></div>
     <div class="hint" id="hint"><span>Press ▶ for the demo loop, or load a track</span></div>
     <div class="stagebtns">
+      <button class="icobtn" id="btnCast" title="Cast to a TV or Android device (C)" aria-label="Cast to a TV or Android device">
+        <svg viewBox="0 0 24 24"><path d="M3 18h.01M3 14a7 7 0 0 1 7 7M3 10a11 11 0 0 1 11 11M13 4h7a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-3"/></svg>
+      </button>
       <button class="icobtn" id="btnLookQuick" title="Save this look (S)" aria-label="Save this look">
         <svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg>
       </button>
@@ -5150,6 +5154,7 @@ const TIP_IDS = {
   btnStepNext:'Next scene or preset (N). On visualizers without scenes: the next page of dials.',
   btnStepRand:'Something new (R): a random scene or preset. On visualizers without scenes, a new mix of every dial.',
   btnSource:'What to visualize: the demo loop, a track from this device, the microphone, or what this computer or phone is playing.',
+  btnCast:'Sends this visualizer to a TV, Chromecast or Android device on your Wi-Fi (C). The TV draws the picture while this device keeps listening, and it follows your dials live. Press it again to stop.',
   btnSaveLook:'Saves this look with an automatic name (S). Rename it later under Saved looks.',
   musicFocus:'Which part of the music leads. Balanced; Bass: kick and bass drive the picture; Melody: vocals and synths lead and the drums calm down; Hits: every kick, snare and hat punches harder. Fine-tune it under More, Music drive.',
   autoSel:'Changes the scene or preset by itself, on a timer or on strong beats (on visualizers without scenes, a new mix of dials). Off keeps whatever you pick.',
@@ -5487,7 +5492,15 @@ const CLOUD = { V:'12.19.0', LIB:'', HOSTS:['aaronaudio09.github.io', 'localhost
 function cloudWay(){
   if (WALL || !CLOUD_CFG || !CLOUD_CFG.apiKey) return '';
   if ((android && typeof android.googleSignIn === 'function') || (window.SDDesktop && typeof window.SDDesktop.googleSignIn === 'function')) return 'app';
-  return CLOUD.HOSTS.includes(location.hostname) ? 'web' : '';   // only addresses listed in Firebase's authorized domains can open the pop-up
+  // Anywhere the page is served over https (or from this machine) Google's window can open, so the button is there.
+  // CLOUD.HOSTS is only what Firebase already trusts: on any other address the attempt is what tells us, and
+  // cloudMsg() then names the address to add under Authentication -> Settings -> Authorized domains.
+  return (location.protocol === 'https:' || /^(localhost|127\.0\.0\.1|\[?::1\]?)$/.test(location.hostname)) ? 'web' : '';
+}
+// A file opened straight off the disk has no address Google will trust: say so instead of showing a dead button.
+function cloudWhyNot(){
+  if (!CLOUD_CFG || !CLOUD_CFG.apiKey) return 'This copy was built without sign-in.';
+  return 'Open Spectral Drift over the web, or in the Windows or Android app, to sync your looks: a file opened straight from the disk has no address Google will accept.';
 }
 
 /* ---------- delete markers and edit times ---------- */
@@ -5602,7 +5615,8 @@ function cloudMsg(e){
   const c = String((e && (e.code || e.message)) || '');
   if (/popup-blocked/.test(c)) return 'The browser blocked Google\'s window. Allow pop-ups for this site and try again.';
   if (/network|unavailable|offline|^load /.test(c)) return 'Can\'t reach your account right now. Your looks stay saved on this device.';
-  if (/unauthorized-domain|operation-not-allowed|api-key|configuration-not-found|invalid-credential|argument-error/.test(c)) return 'Sign-in isn\'t set up for this copy yet.';
+  if (/unauthorized-domain/.test(c)) return 'Google doesn\'t know this address yet: add ' + location.hostname + ' under Authentication, Settings, Authorized domains in the Firebase console, then try again.';
+  if (/operation-not-allowed|api-key|configuration-not-found|invalid-credential|argument-error/.test(c)) return 'Sign-in isn\'t set up for this copy yet.';
   if (/permission-denied/.test(c)) return 'Sync paused: your account refused access.';
   if (/quota|resource-exhausted/.test(c)) return 'Sync is resting until tomorrow (daily limit). Your looks stay saved here.';
   return 'Sign-in didn\'t work. Try again.';
@@ -5675,7 +5689,14 @@ function cloudWipe(){
 /* ---------- panel ---------- */
 function cloudRender(){
   const row = $('#cloudRow'); if (!row) return;
-  const way = cloudWay(); row.hidden = !way; if (!way) return;
+  const way = cloudWay();
+  if (!way){   // nowhere to sign in from (a file off the disk, or a build with no config): say why rather than hide it
+    row.hidden = WALL; $('#btnCloudIn').hidden = true; $('#cloudOn').hidden = true;
+    $('#cloudNote').hidden = false; $('#cloudNote').textContent = cloudWhyNot();
+    return;
+  }
+  row.hidden = false;
+  $('#cloudNote').textContent = 'Sign in to keep your looks in your Google account and get them on every device you sign in on.';
   const on = !!CLOUD.user, busy = CLOUD.st === 'busy';
   $('#btnCloudIn').hidden = on; $('#cloudNote').hidden = on; $('#cloudOn').hidden = !on;
   $('#cloudInTxt').textContent = busy && !on ? 'Signing in…' : 'Sign in with Google';
@@ -5792,6 +5813,7 @@ document.addEventListener('keydown', e => {
     case 'f': case 'F': $('#btnFull').click(); break;
     case 'h': case 'H': document.body.classList.toggle('ui-hidden'); resize(); break;
     case 's': case 'S': if (!WALL) lookSave(''); break;
+    case 'c': case 'C': if (!WALL) castToggle(); break;
   }
 });
 
@@ -5801,13 +5823,20 @@ document.addEventListener('keydown', e => {
 var remoteT = 0, remoteApplying = false;
 const REMOTE_LOCAL = ['vol', 'quality', 'hyq', 'd3q', 'auto'];      // per-device: volume, render quality and auto-change stay where they are
 function stateJSON(){ return JSON.stringify(S, (k, v) => k === 'milked' ? undefined : v); }
-function remoteOut(json){ if (typeof android !== 'undefined' && android && typeof android.remoteState === 'function') try { android.remoteState(json); } catch(e){} }
+function remoteOut(json){ if (typeof android !== 'undefined' && android && typeof android.remoteState === 'function') try { android.remoteState(json); } catch(e){} castSend('j' + json); }
 function remoteQueue(){ if (remoteApplying || WALL) return; clearTimeout(remoteT); remoteT = setTimeout(() => remoteOut(stateJSON()), 120); }
+function imgDataURL(){
+  if (!(IMG.user && IMG.el)) return '';
+  const k = Math.min(1, 448/Math.max(IMG.el.width, IMG.el.height)), c = el('canvas');
+  c.width = Math.max(1, Math.round(IMG.el.width*k)); c.height = Math.max(1, Math.round(IMG.el.height*k));
+  c.getContext('2d').drawImage(IMG.el, 0, 0, c.width, c.height);
+  return c.toDataURL('image/jpeg', 0.78);
+}
 function remoteImage(){
-  if (remoteApplying || WALL || typeof android === 'undefined' || !android || typeof android.remoteImage !== 'function') return;
-  let d = '';
-  if (IMG.user && IMG.el){ const k = Math.min(1, 448/Math.max(IMG.el.width, IMG.el.height)), c = el('canvas'); c.width = Math.max(1, Math.round(IMG.el.width*k)); c.height = Math.max(1, Math.round(IMG.el.height*k)); c.getContext('2d').drawImage(IMG.el, 0, 0, c.width, c.height); d = c.toDataURL('image/jpeg', 0.78); }
-  try { android.remoteImage(d); } catch(e){}
+  if (remoteApplying || WALL) return;
+  castImage();
+  if (typeof android === 'undefined' || !android || typeof android.remoteImage !== 'function') return;
+  try { android.remoteImage(imgDataURL()); } catch(e){}
 }
 window.__remoteSync = () => { remoteOut(stateJSON()); remoteImage(); };
 function applyState(json){
@@ -5832,6 +5861,93 @@ function applyState(json){
 function applyImage(d){
   if (d === '') { if (IMG.user) { remoteApplying = true; try { clearImage(); } finally { remoteApplying = false; } } return; }
   if (typeof d === 'string' && /^data:image\/(jpeg|png|webp);base64,/.test(d)) loadImageURL(d, true);
+}
+
+/* ================= Cast: this visualizer on a TV, Chromecast or Android device ================= */
+// The page is its own receiver. The TV opens the same address with #wallpaper (no controls) and this device keeps
+// doing the listening: thirty times a second we send it 64 spectrum magnitudes, the same way Lively and Wallpaper
+// Engine push them into hostAudio(), plus the whole state whenever a dial moves and the picture Hyperspace is
+// using. So the TV shows the look you are looking at and follows every change, while the sound stays here.
+// Chrome, Edge and the Android app reach Cast devices through the Presentation API; in any other browser its own
+// "Cast..." menu still mirrors the tab, which the toast says.
+const CAST_SITE = 'https://aaronaudio09.github.io/spectral-drift/';   // the public copy a Cast device can always load
+const CAST = { req:null, conn:null, avail:false, timer:0, bins:new Array(64), sentImg:null };
+function castURL(){
+  const h = location.hostname;
+  const sandbox = location.protocol !== 'https:' || /^(localhost|127\.0\.0\.1|\[?::1\]?)$/.test(h) || /(^|\.)claude\.ai$|claudeusercontent\.com$|(^|\.)anthropic\.com$/.test(h);
+  return (sandbox ? CAST_SITE : location.href.split('#')[0]) + '#wallpaper';   // a TV can't open file://, localhost or a signed-in page
+}
+function castReq(){
+  if (CAST.req || WALL || typeof PresentationRequest !== 'function') return CAST.req;
+  try { CAST.req = new PresentationRequest([castURL()]); } catch(e){ return null; }
+  try { CAST.req.getAvailability().then(a => { const set = () => { CAST.avail = !!a.value; castRender(); }; a.onchange = set; set(); }, () => {}); } catch(e){}
+  return CAST.req;
+}
+function castRender(){
+  const b = $('#btnCast'); if (!b) return;
+  const on = !!CAST.conn;
+  b.classList.toggle('on', on);
+  b.title = on ? 'Stop casting (C)' : CAST.req && !CAST.avail ? 'Cast to a TV or Android device (C) — none found on this Wi-Fi yet' : 'Cast to a TV or Android device (C)';
+  b.setAttribute('aria-label', b.title);
+}
+function castSend(m){ const c = CAST.conn; if (c && c.state === 'connected') try { c.send(m); } catch(e){} }
+function castTick(){
+  if (!CAST.conn) return;
+  const B = CAST.bins;
+  for (let i=0;i<64;i++){ const v = specTrue((i + 0.5)/64); B[i] = v > 0 ? (v < 1 ? (v*255)|0 : 255) : 0; }
+  castSend('s' + B.join(','));
+}
+function castImage(){
+  if (!CAST.conn) return;
+  const d = imgDataURL();
+  if (d === CAST.sentImg) return;
+  CAST.sentImg = d; castSend('i' + d);
+}
+function castWire(c){
+  CAST.conn = c; castRender();
+  const gone = () => { if (CAST.conn === c){ CAST.conn = null; clearInterval(CAST.timer); CAST.timer = 0; CAST.sentImg = null; castRender(); } };
+  c.onclose = gone; c.onterminate = gone;
+  const hello = () => { castSend('j' + stateJSON()); CAST.sentImg = null; castImage(); };
+  c.onconnect = hello; hello();
+  clearInterval(CAST.timer); CAST.timer = setInterval(castTick, 33);
+  flash('Casting - the TV follows your dials');
+}
+function castStart(){
+  if (android && typeof android.castStart === 'function'){ try { android.castStart(castURL()); flash('Casting'); } catch(e){} return; }
+  const r = castReq();
+  if (!r){ toast("This browser can't pick a Cast device. Use its own Cast... menu to send this tab to your TV, or open Spectral Drift in Chrome, Edge or the Android app."); return; }
+  r.start().then(castWire, e => {
+    const n = String((e && e.name) || '');
+    if (/NotAllowedError|AbortError|NotFoundError/.test(n)) return;            // the picker was closed
+    toast('No Cast device answered. Check the TV is awake and on this Wi-Fi.');
+  });
+}
+function castStop(){
+  const c = CAST.conn; CAST.conn = null; clearInterval(CAST.timer); CAST.timer = 0; CAST.sentImg = null; castRender();
+  if (c) try { c.terminate(); } catch(e){}
+  flash('Stopped casting');
+}
+function castToggle(){ if (CAST.conn) castStop(); else castStart(); }
+// On the TV: take the spectrum, the dials and the picture from whoever is casting to us.
+function castRecv(data){
+  if (typeof data !== 'string' || data.length < 2) return;
+  const k = data[0], body = data.slice(1);
+  if (k === 's'){ const p = body.split(','), a = new Float32Array(64); for (let i=0;i<64;i++) a[i] = (+p[i] || 0)/255; hostAudio(a); }
+  else if (k === 'j') applyState(body);
+  else if (k === 'i') applyImage(body);
+}
+function castReceiverInit(){
+  const r = navigator.presentation && navigator.presentation.receiver;
+  if (!r || !r.connectionList) return;
+  r.connectionList.then(list => {
+    const wire = c => { c.onmessage = e => castRecv(e.data); };
+    list.connections.forEach(wire);
+    list.onconnectionavailable = e => wire(e.connection);
+  }, () => {});
+}
+if (!WALL){
+  $('#btnCast').addEventListener('click', e => { e.stopPropagation(); castToggle(); });
+  castRender(); castReq();
 }
 
 /* ================= phone sliders: no accidental drags ================= */
@@ -5898,6 +6014,7 @@ tipsInit();
 looksInit();
 if (window.matchMedia('(max-width:899px)').matches) $('#dock').classList.add('collapsed'); else $('#dock').classList.remove('collapsed');
 if (WALL){
+  castReceiverInit();                                                         // a Cast sender drives this copy
   if (android) setTimeout(startDevice, 300);                                  // Android live wallpaper: the phone's output mix
   // The host calls __wallSync() whenever the wallpaper comes back into view: reload if the app changed the dials or the image.
   const wallSig = () => { try { return (localStorage.getItem('spectral-drift') || '') + '|' + (localStorage.getItem('spectral-drift-img') || '').length; } catch(e){ return ''; } };
